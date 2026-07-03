@@ -1,27 +1,37 @@
-import os
 import pandas as pd
-# Importamos tus dos funciones limpias desde la carpeta Network
-from Network.api import obtener_lista_stablecoins, obtener_historico_coingecko
+# Importamos las funciones desde el archivo donde las hayas guardado
+# (Asumiendo que guardaste las funciones anteriores en un archivo llamado 'extractores.py')
+from Network.api import extraer_stablecoins_con_desviacion, extraer_y_guardar_coingecko
+
+def ejecutar_pipeline_datos():
+    print("=== INICIANDO PIPELINE DE DATA EXTRACTION ===")
+    
+    # 1. Ejecutar las extracciones y guardar los CSVs individuales
+    df_stables = extraer_stablecoins_con_desviacion()
+    df_crypto = extraer_y_guardar_coingecko(coin_id="bitcoin", days="180", ruta_csv="data_bitcoin.csv")
+    
+    # Validamos que ambas extracciones hayan devuelto datos correctamente
+    if df_stables is not None and df_crypto is not None:
+        print("\n=== COMBINANDO FUENTES DE DATOS ===")
+        
+        # 2. EL TRUCO DEL MERGE: Unimos ambos DataFrames usando la 'fecha' como llave común.
+        # Usamos 'inner' para asegurar que solo se queden los días que existen en ambas fuentes.
+        df_consolidado = pd.merge(df_crypto, df_stables, on="fecha", how="inner")
+        
+        # 3. Guardamos el dataset final listo para el análisis o Power BI
+        ruta_final = "criptoradar_dataset_final.csv"
+        df_consolidado.to_csv(ruta_final, index=False)
+        
+        print(f"¡Pipeline completado con éxito!")
+        print(f"Dataset unificado guardado en: {ruta_final}")
+        print("\nMuestra del dataset combinado:")
+        print(df_consolidado.head())
+        
+        return df_consolidado
+    else:
+        print("\n[ERROR] El pipeline falló porque una de las fuentes no devolvió datos.")
+        return None
 
 if __name__ == "__main__":
-    # 1. El director de orquesta prepara la carpeta en la raíz del proyecto
-    carpeta_data = "Data"
-    os.makedirs(carpeta_data, exist_ok=True)
-    
-    print("🚀 Iniciando el pipeline de CriptoRadar...")
-    
-    # 2. Llamamos a DefiLlama y guardamos su CSV
-    print("Descargando datos actuales de DefiLlama...")
-    df_llama = obtener_lista_stablecoins()
-    ruta_llama = os.path.join(carpeta_data, "mercado_actual_llama.csv")
-    df_llama.to_csv(ruta_llama, index=False)
-    print(f"¡Guardado! -> {ruta_llama}")
-    
-    # 3. Llamamos a CoinGecko y guardamos su CSV
-    print("Descargando histórico de Tether desde CoinGecko...")
-    df_gecko = obtener_historico_coingecko(coin_id="tether", days=30)
-    ruta_gecko = os.path.join(carpeta_data, "historico_tether.csv")
-    df_gecko.to_csv(ruta_gecko, index=False)
-    print(f"¡Guardado! -> {ruta_gecko}")
-    
-    print("\n🎉 ¡Proceso finalizado con éxito! Revisa la carpeta /Data en tu buscador de archivos.")
+    # Esto asegura que el pipeline solo se ejecute si lanzas este archivo directamente
+    ejecutar_pipeline_datos()
