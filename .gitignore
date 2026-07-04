@@ -219,6 +219,10 @@ __marimo__/
 
 #data files
 data/raw/*
+# Data files
+Data/
+# data files
+data/
 
 #ficheros temporales mac
 .DS_Store
