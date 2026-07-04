@@ -1,6 +1,6 @@
 import requests
 import pandas as pd
-def extraer_stablecoins_con_desviacion(stablecoin_id="1", ruta_csv="stablecoins_analisis.csv"):
+def extraer_stablecoins_con_desviacion(stablecoin_id="1", ruta_csv="Data/stablecoins_analisis.csv"):
     """
     Extrae datos de DefiLlama, desempaqueta los diccionarios,
     calcula el precio implícito y obtiene la desviación del peg.
@@ -27,13 +27,13 @@ def extraer_stablecoins_con_desviacion(stablecoin_id="1", ruta_csv="stablecoins_
             df = df[df['supply_stablecoin'] > 0].copy()
             
             # 3. CÁLCULO DEL PRECIO: Dividimos el valor total en USD entre la cantidad de monedas
-            df['precio_moneda'] = df['valor_total_usd'] / df['supply_stablecoin']
+            df['usd_price'] = df['valor_total_usd'] / df['supply_stablecoin']
             
             # 4. TU FÓRMULA: Calculamos la desviación restándole 1 al precio obtenido
-            df['desviacion_peg'] = (1.0 - df['precio_moneda']).abs()
+            df['desviacion_peg'] = (1.0 - df['usd_price']).abs()
             
             # 5. Seleccionamos las columnas limpias de negocio
-            df_final = df[['fecha', 'supply_stablecoin', 'precio_moneda', 'desviacion_peg']]
+            df_final = df[['fecha', 'supply_stablecoin', 'usd_price', 'desviacion_peg']]
             
             # Guardamos en el CSV
             df_final.to_csv(ruta_csv, index=False)
@@ -49,63 +49,48 @@ def extraer_stablecoins_con_desviacion(stablecoin_id="1", ruta_csv="stablecoins_
         print(f"Ocurrió un error inesperado al procesar: {e}")
         return None
 
-def extraer_y_guardar_coingecko_con_key(coin_id="bitcoin", days="1095", ruta_csv="data_bitcoin.csv"):
+def extraer_y_guardar_coingecko_con_key(coin_id="bitcoin", days="365", ruta_csv="Data/data_bitcoin.csv"):
     """
-    Extrae el precio histórico de CoinGecko usando la API Key del Plan Demo Gratuito
-    y guarda los datos diarios en un CSV.
+    Extrae el precio histórico Y EL VOLUMEN de CoinGecko usando la API Key.
     """
     print(f"Iniciando extracción de {coin_id} desde la API oficial de CoinGecko...")
-    
-    # URL oficial de CoinGecko para el gráfico de mercado histórico
     url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart?vs_currency=usd&days={days}"
     
-
-    api_key_coingecko = "CG-cvz8muRDHdGNzrVAnqtktzo7" #Esto habrá que encriptarlo dios santo por tu madre no me seas burra
-    
-    # Configuramos las cabeceras (headers) de seguridad para identificarnos ante la API
-    headers = {
-        "accept": "application/json",
-        "x-cg-demo-api-key": api_key_coingecko
-    }
+    api_key_coingecko = "CG-cvz8muRDHdGNzrVAnqtktzo7"
+    headers = {"accept": "application/json", "x-cg-demo-api-key": api_key_coingecko}
     
     try:
-        # Hacemos la petición pasando las cabeceras con nuestra clave
         response = requests.get(url, headers=headers)
-        
         if response.status_code == 200:
             data = response.json()
             
-            # Extraemos la lista de pares [timestamp_milisegundos, precio]
+            # 1. Extraemos precios y volúmenes (ambos vienen en el mismo JSON)
             lista_precios = data['prices']
+            lista_volumenes = data['total_volumes']
             
-            # Convertimos a DataFrame
-            df = pd.DataFrame(lista_precios, columns=['timestamp', 'precio_bitcoin'])
+            # 2. Creamos los DataFrames individuales
+            df_precios = pd.DataFrame(lista_precios, columns=['timestamp', 'precio_crypto'])
+            df_volumenes = pd.DataFrame(lista_volumenes, columns=['timestamp', 'volumen_crypto'])
             
-            # Convertimos el timestamp de milisegundos a formato fecha legible
+            # 3. Unimos precio y volumen por su timestamp
+            df = pd.merge(df_precios, df_volumenes, on='timestamp')
+            
+            # 4. Limpiamos la fecha
             df['fecha'] = pd.to_datetime(df['timestamp'], unit='ms').dt.date
             
-            # Agrupamos por día (sacando la media) para asegurarnos 1 único registro por día
-            df_limpio = df.groupby('fecha')['precio_bitcoin'].mean().reset_index()
+            # 5. Agrupamos por día sacando la media de precio y volumen
+            df_limpio = df.groupby('fecha').agg({
+                'precio_crypto': 'mean',
+                'volumen_crypto': 'mean'
+            }).reset_index()
             
-            # Guardamos en el archivo CSV
             df_limpio.to_csv(ruta_csv, index=False)
-            print(f"¡Éxito rotundo! Datos con API Key guardados en: {ruta_csv}")
-            print(df_limpio.head())
-            
             return df_limpio
-        
-        elif response.status_code == 401:
-            print("❌ Error 401: No autorizado. Revisa que hayas copiado bien tu API Key en el código.")
-            return None
-        elif response.status_code == 429:
-            print("⚠️ Error 429: Has superado el límite de peticiones por minuto del plan gratuito. Espera un momento.")
-            return None
         else:
-            print(f"Error en CoinGecko. Código de estado: {response.status_code}")
+            print(f"Error en CoinGecko. Código: {response.status_code}")
             return None
-            
     except Exception as e:
-        print(f"Ocurrió un error inesperado al conectar con CoinGecko: {e}")
+        print(f"Error: {e}")
         return None
     
 
@@ -116,11 +101,11 @@ def get_coingecko_data():
     en un único DataFrame de formato LARGO (ideal para Power BI).
     """
     # 1. Corregimos las llamadas con sus IDs y nombres de archivo correspondientes
-    df_btc = extraer_y_guardar_coingecko_con_key(coin_id="bitcoin", days="365", ruta_csv="data_bitcoin.csv")
-    df_eth = extraer_y_guardar_coingecko_con_key(coin_id="ethereum", days="365", ruta_csv="data_ethereum.csv")
-    df_bnb = extraer_y_guardar_coingecko_con_key(coin_id="binancecoin", days="365", ruta_csv="data_binancecoin.csv")
-    df_sol = extraer_y_guardar_coingecko_con_key(coin_id="solana", days="365", ruta_csv="data_solana.csv")
-    df_xrp = extraer_y_guardar_coingecko_con_key(coin_id="ripple", days="365", ruta_csv="data_ripple.csv")
+    df_btc = extraer_y_guardar_coingecko_con_key(coin_id="bitcoin", days="365", ruta_csv="dData/ata_bitcoin.csv")
+    df_eth = extraer_y_guardar_coingecko_con_key(coin_id="ethereum", days="365", ruta_csv="Data/data_ethereum.csv")
+    df_bnb = extraer_y_guardar_coingecko_con_key(coin_id="binancecoin", days="365", ruta_csv="Data/data_binancecoin.csv")
+    df_sol = extraer_y_guardar_coingecko_con_key(coin_id="solana", days="365", ruta_csv="Data/data_solana.csv")
+    df_xrp = extraer_y_guardar_coingecko_con_key(coin_id="ripple", days="365", ruta_csv="Data/data_ripple.csv")
     
     # Lista para recolectar las tablas limpias
     listado_dfs = []
@@ -136,16 +121,10 @@ def get_coingecko_data():
     
     for nombre_id, df_individual in mapeo_cryptos.items():
         if df_individual is not None:
-            # Hacemos una copia para no alterar el original
             df_temp = df_individual.copy()
-            
-            # Añadimos la columna identificadora que pide Power BI
             df_temp['crypto_id'] = nombre_id
-            
-            # Homogeneizamos el nombre de la columna de precio a algo genérico
-            df_temp = df_temp.rename(columns={'precio_bitcoin': 'precio_crypto'})
-            
-            # Guardamos en nuestra lista
+            # Nos aseguramos de quedarnos con las columnas correctas incluyendo volumen
+            df_temp = df_temp[['fecha', 'precio_crypto', 'volumen_crypto', 'crypto_id']]
             listado_dfs.append(df_temp)
             
     if len(listado_dfs) > 0:

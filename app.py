@@ -1,8 +1,9 @@
 import pandas as pd
-# Importamos las funciones desde el archivo donde las hayas guardado
+import os
 from Network.api import extraer_stablecoins_con_desviacion, get_coingecko_data
 
 def ejecutar_pipeline_datos():
+    os.makedirs("Data", exist_ok=True)
     print("=== INICIANDO PIPELINE DE DATA EXTRACTION ===")
     
     # 1. Ejecutar las extracciones
