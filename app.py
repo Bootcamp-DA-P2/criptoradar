@@ -23,7 +23,7 @@ def ejecutar_pipeline_datos():
         df_consolidado = pd.merge(df_crypto, df_stables, on="fecha", how="inner")
         
         # 3. Guardamos el dataset final listo para devorarlo en Power BI
-        ruta_final = "criptoradar_dataset_final.csv"
+        ruta_final = "Data/criptoradar_dataset_final.csv"
         df_consolidado.to_csv(ruta_final, index=False)
         
         print(f"¡Pipeline completado con éxito!")
