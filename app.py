@@ -1,7 +1,5 @@
 import pandas as pd
 import os
-
-# IMPORTACIÓN MODULAR
 from scrapers.bitget_scraper import descargar_historico_bitget
 
 
