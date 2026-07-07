@@ -4,11 +4,12 @@ import sqlite3
 
 from src.funciones_criptos import ejecutar_pipeline_criptomonedas
 from src.funciones_stable_coins import obtener_historico_defillama, calcular_metricas_anomalidad
+from src.analisis_alertas import ejecutar_pipeline_alertas
 
-# --- BLOQUE PRINCIPAL DE EJECUCIÓN (CON PERSISTENCIA A SQLITE) ---
+# --- BLOQUE PRINCIPAL DE EJECUCIÓN ---
 if __name__ == "__main__":
     try:
-
+        # 1. Ejecutar el pipeline de criptomonedas (Bitget)
         ejecutar_pipeline_criptomonedas()
 
         stablecoins_radar = {
@@ -18,6 +19,7 @@ if __name__ == "__main__":
         
         datasets_procesados = []
         
+        # 2. Ejecutar la extracción de Stablecoins (DefiLlama)
         for id_coin, nombre_coin in stablecoins_radar.items():
             print(f"\n=========================================")
             print(f"PROCESANDO: {nombre_coin} (ID: {id_coin})")
@@ -51,11 +53,8 @@ if __name__ == "__main__":
             db_path = os.path.join(db_dir, "criptoradar.db")
             print(f"\nConectando a la Base de Datos SQLite en: '{db_path}'...")
             
-            # Abrir conexión
             conexion = sqlite3.connect(db_path)
             
-            # Guardamos el DataFrame en la tabla 'historico_stablecoins'
-            # reset_index() asegura que la columna 'datetime' se guarde como un campo real de la tabla
             df_radar_completo.reset_index().to_sql(
                 name='historico_stablecoins', 
                 con=conexion, 
@@ -63,19 +62,20 @@ if __name__ == "__main__":
                 index=False
             )
             
-            # Cerrar conexión de forma limpia
             conexion.close()
-            print("[SQLITE] ¡Éxito! Las 21,575 filas se han guardado directamente en la tabla 'historico_stablecoins'.")
+            print("[SQLITE] ¡Éxito! Las filas se han guardado directamente en la tabla 'historico_stablecoins'.")
             
-            # Mantenemos también la copia en CSV como respaldo rápido
+            # Mantenemos la copia en CSV como respaldo
             df_radar_completo.to_csv("data/datos_preprocesados.csv")
             print("[CSV] Respaldo exportado correctamente en 'data/datos_preprocesados.csv'")
             
+            # =====================================================================
+            # NUEVO BLOQUE: EJECUCIÓN DEL MODELO DE ALERTAS INTELIGENTES
+            # =====================================================================
+            ejecutar_pipeline_alertas()
+            
         else:
-            print("[ALERTA] No se pudo procesar ninguna stablecoin.")
+            print("[ALERTA] No se pudo procesar ninguna stablecoin. Se cancela el módulo de alertas.")
             
     except Exception as e:
         print(f"Ocurrió un error general en el flujo: {e}")
-
-    
-    
