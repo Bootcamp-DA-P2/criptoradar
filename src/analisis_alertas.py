@@ -20,13 +20,6 @@ def ejecutar_pipeline_alertas():
     df_cryptos = pd.read_csv(ruta_cryptos)
     df_stables = pd.read_csv(ruta_stables)
 
-    #---------ESTO SERÁ ELIMINADO TRAS LA LIMPIEZA------------------
-    # Convertir columnas de tiempo a datetime
-    df_cryptos['fecha'] = pd.to_datetime(df_cryptos['fecha'])
-    df_stables['datetime'] = pd.to_datetime(df_stables['datetime'])
-    # Renombramos la columna de fecha de stablecoins a 'fecha' para facilitar los merges
-    df_stables = df_stables.rename(columns={'datetime': 'fecha'})
-    #-------------------------------------------------------------
 
 
     # 2. CALCULAR EL RETORNO DIARIO DE CADA CRIPTO
