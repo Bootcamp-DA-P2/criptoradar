@@ -9,8 +9,8 @@ def ejecutar_pipeline_alertas():
     print("="*50)
 
     # 1. CARGAR Y PREPARAR LOS DATOS
-    ruta_cryptos = "data/criptoradar_crypto_final.csv"
-    ruta_stables = "data/datos_preprocesados.csv"
+    ruta_cryptos = "data/criptoradar_crypto_final_clean.csv"
+    ruta_stables = "data/datos_preprocesados_clean.csv"
 
     if not os.path.exists(ruta_cryptos) or not os.path.exists(ruta_stables):
         print("❌ [ERROR] No se encontraron los archivos necesarios en 'data/'. Ejecuta primero el pipeline de extracción.")
@@ -20,7 +20,8 @@ def ejecutar_pipeline_alertas():
     df_cryptos = pd.read_csv(ruta_cryptos)
     df_stables = pd.read_csv(ruta_stables)
 
-
+    df_cryptos['datetime'] = pd.to_datetime(df_cryptos['datetime'])
+    df_stables['datetime'] = pd.to_datetime(df_stables['datetime'])
 
     # 2. CALCULAR EL RETORNO DIARIO DE CADA CRIPTO
     print("📈 Calculando retornos diarios de criptomonedas...")
@@ -133,7 +134,7 @@ def ejecutar_pipeline_alertas():
 
             fecha_str = fila['datetime'].strftime('%Y-%m-%d')
             frase = (f"El {fecha_str}, {fila['stablecoin']} se desvió {fila['peg_deviation']:.4f} de su paridad, "
-                     f"coincidiendo con un mercado en estrés liderado por un movimiento en {cripto_lider} del {retorno_lider_pct:.2f}%.")
+                    f"coincidiendo con un mercado en estrés liderado por un movimiento en {cripto_lider} del {retorno_lider_pct:.2f}%.")
             frases_documentacion.append(frase)
 
         df_criticas['narrativa_alerta'] = frases_documentacion
