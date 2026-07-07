@@ -24,7 +24,7 @@ def ejecutar_pipeline_alertas():
 
     # 2. CALCULAR EL RETORNO DIARIO DE CADA CRIPTO
     print("📈 Calculando retornos diarios de criptomonedas...")
-    df_cryptos = df_cryptos.sort_values(by=['crypto_id', 'fecha'])
+    df_cryptos = df_cryptos.sort_values(by=['crypto_id', 'datetime'])
     df_cryptos['daily_return'] = df_cryptos.groupby('crypto_id')['close'].pct_change() # porcentaje de cambio
     
     # Eliminar filas sin retorno (el primer día de historial de cada una)
@@ -35,7 +35,7 @@ def ejecutar_pipeline_alertas():
     # Calculamos el valor absoluto del retorno diario
     df_cryptos['abs_return'] = df_cryptos['daily_return'].abs()
     # Agrupamos por fecha y sacamos la media (un solo número por día que representa el movimiento promedio)
-    df_mercado = df_cryptos.groupby('fecha')['abs_return'].mean().reset_index()
+    df_mercado = df_cryptos.groupby('datetime')['abs_return'].mean().reset_index()
     df_mercado = df_mercado.rename(columns={'abs_return': 'market_volatility'})
 
     # 4. DEFINIR EL UMBRAL DE "MERCADO EN ESTRÉS"
@@ -69,11 +69,11 @@ def ejecutar_pipeline_alertas():
         lista_stables_con_anomalias.append(grupo)
         
     df_stables_anomalas = pd.concat(lista_stables_con_anomalias)
-    #-------------------------------------------------------------
+    
 
     # 6. UNIR LAS DOS SEÑALES POR FECHA
     print("🔗 Fusionando señales de Stablecoins y Estrés de Mercado...")
-    df_alertas = pd.merge(df_stables_anomalas, df_mercado, on='fecha', how='inner')
+    df_alertas = pd.merge(df_stables_anomalas, df_mercado, on='datetime', how='inner')
 
     # 7. CALCULAR EL NIVEL DE ALERTA (Matriz de Decisiones)
     print("🚨 Evaluando niveles de alerta analíticos...")
@@ -101,7 +101,7 @@ def ejecutar_pipeline_alertas():
 
     # 9. Reconstruir/pivotar los datos de criptomonedas para tener formato ancho por fecha
     # Esto pasará de formato largo a tener columnas: btc_return, eth_return, etc.
-    df_cryptos_pivot = df_cryptos.pivot(index='fecha', columns='crypto_id', values='daily_return').reset_index()
+    df_cryptos_pivot = df_cryptos.pivot(index='datetime', columns='crypto_id', values='daily_return').reset_index()
     df_cryptos_pivot = df_cryptos_pivot.rename(columns={
         'bitcoin': 'btc_return',
         'ethereum': 'eth_return',
@@ -110,7 +110,7 @@ def ejecutar_pipeline_alertas():
     })
 
     # 10. Unir el desglose de retornos a nuestra tabla de alertas
-    df_alertas_detalladas = pd.merge(df_alertas, df_cryptos_pivot, on='fecha', how='left')
+    df_alertas_detalladas = pd.merge(df_alertas, df_cryptos_pivot, on='datetime', how='left')
 
     # 11, 12 y 13. Filtrar y documentar de forma automática las alertas críticas
     df_criticas = df_alertas_detalladas[df_alertas_detalladas['nivel_alerta'] == '2_ALERTA_MERCADO'].copy()
@@ -131,7 +131,7 @@ def ejecutar_pipeline_alertas():
             cripto_lider = nombres_limpios[col_max]
             retorno_lider_pct = fila[col_max] * 100
 
-            fecha_str = fila['fecha'].strftime('%Y-%m-%d')
+            fecha_str = fila['datetime'].strftime('%Y-%m-%d')
             frase = (f"El {fecha_str}, {fila['stablecoin']} se desvió {fila['peg_deviation']:.4f} de su paridad, "
                      f"coincidiendo con un mercado en estrés liderado por un movimiento en {cripto_lider} del {retorno_lider_pct:.2f}%.")
             frases_documentacion.append(frase)

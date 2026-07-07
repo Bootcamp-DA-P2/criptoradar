@@ -69,9 +69,7 @@ if __name__ == "__main__":
             df_radar_completo.to_csv("data/datos_preprocesados.csv")
             print("[CSV] Respaldo exportado correctamente en 'data/datos_preprocesados.csv'")
             
-            # =====================================================================
-            # NUEVO BLOQUE: EJECUCIÓN DEL MODELO DE ALERTAS INTELIGENTES
-            # =====================================================================
+            #Ejecución del sistema de alertas
             ejecutar_pipeline_alertas()
             
         else:
