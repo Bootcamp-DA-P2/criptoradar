@@ -1,6 +1,5 @@
 import pandas as pd
 import os
-import sqlite3
 
 from src.funciones_criptos import ejecutar_pipeline_criptomonedas
 from src.funciones_stable_coins import obtener_historico_defillama, calcular_metricas_anomalidad
@@ -46,27 +45,7 @@ if __name__ == "__main__":
             
             print("\n--- ¡PIPELINE MULTI-STABLECOIN EXITOSO! ---")
             print(f"Dimensiones del dataset global: {df_radar_completo.shape[0]} filas x {df_radar_completo.shape[1]} columnas")
-            
-            # === PERSISTENCIA EN BASE DE DATOS SQLITE ===
-            db_dir = "data"
-            if not os.path.exists(db_dir):
-                os.makedirs(db_dir)
-                
-            db_path = os.path.join(db_dir, "criptoradar.db")
-            print(f"\nConectando a la Base de Datos SQLite en: '{db_path}'...")
-            
-            conexion = sqlite3.connect(db_path)
-            
-            df_radar_completo.reset_index().to_sql(
-                name='historico_stablecoins', 
-                con=conexion, 
-                if_exists='replace', 
-                index=False
-            )
-            
-            conexion.close()
-            print("[SQLITE] ¡Éxito! Las filas se han guardado directamente en la tabla 'historico_stablecoins'.")
-            
+
             # Mantenemos la copia en CSV como respaldo
             df_radar_completo.to_csv("data/datos_preprocesados.csv")
             print("[CSV] Respaldo exportado correctamente en 'data/datos_preprocesados.csv'")
@@ -84,8 +63,6 @@ if __name__ == "__main__":
                 )
             except Exception as e:
                 print(f"\n❌ Hubo un error durante la ejecución del pipeline: {e}")
-
-
 
             #Ejecución del sistema de alertas
             ejecutar_pipeline_alertas()
