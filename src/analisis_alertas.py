@@ -20,6 +20,7 @@ def ejecutar_pipeline_alertas():
     df_cryptos = pd.read_csv(ruta_cryptos)
     df_stables = pd.read_csv(ruta_stables)
 
+    #Volvemos a convertir a fecha la columna pues al leer de un csv no se guarda el formato fecha
     df_cryptos['datetime'] = pd.to_datetime(df_cryptos['datetime'])
     df_stables['datetime'] = pd.to_datetime(df_stables['datetime'])
 

@@ -5,7 +5,7 @@ import sqlite3
 from src.funciones_criptos import ejecutar_pipeline_criptomonedas
 from src.funciones_stable_coins import obtener_historico_defillama, calcular_metricas_anomalidad
 from src.analisis_alertas import ejecutar_pipeline_alertas
-from utils.limpieza import ejecutar_pipeline_limpieza
+from utils.clean_function import ejecutar_pipeline_limpieza
 
 # --- BLOQUE PRINCIPAL DE EJECUCIÓN ---
 if __name__ == "__main__":

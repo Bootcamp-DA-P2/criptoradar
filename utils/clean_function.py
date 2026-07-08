@@ -5,30 +5,31 @@ import numpy as np
 def limpiar_criptomonedas(ruta_origen: str) -> pd.DataFrame:
     """
     Carga y limpia el dataset de criptomonedas tradicionales (Bitget).
-    Realiza conversiones de formato, control de nulos, tipos de datos y ordenación.
     """
     if not os.path.exists(ruta_origen):
         raise FileNotFoundError(f"❌ No se encontró el archivo de criptomonedas en: {ruta_origen}")
         
     print("⏳ Iniciando limpieza de criptomonedas tradicionales...")
     df = pd.read_csv(ruta_origen)
-    df_inicial = df.copy()
     
-    # 1. Asegurar formato datetime y extraer solo la fecha limpia
-    df['fecha'] = pd.to_datetime(df['fecha']).dt.date
+    # 1. CAMBIO AQUÍ: Convertimos a datetime y mantenemos el nombre 'datetime'
+    df['datetime'] = pd.to_datetime(df['fecha'])
+    # Si venía una columna vieja llamada 'fecha', la eliminamos para no duplicar
+    if 'fecha' in df.columns and 'datetime' != 'fecha':
+        df = df.drop(columns=['fecha'])
     
-    # 2. Control de tipos de datos numéricos (asegurar floats)
+    # 2. Control de tipos de datos numéricos
     cols_numericas = ['open', 'high', 'low', 'close', 'volume']
     for col in cols_numericas:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
             
-    # 3. Tratamiento de nulos y duplicados (si existieran)
-    df = df.dropna(subset=['fecha', 'crypto_id', 'close'])
-    df = df.drop_duplicates(subset=['fecha', 'crypto_id'], keep='last')
+    # 3. Tratamiento de nulos y duplicados utilizando 'datetime'
+    df = df.dropna(subset=['datetime', 'crypto_id', 'close'])
+    df = df.drop_duplicates(subset=['datetime', 'crypto_id'], keep='last')
     
     # 4. Ordenación lógica temporal por activo
-    df = df.sort_values(by=['crypto_id', 'fecha']).reset_index(drop=True)
+    df = df.sort_values(by=['crypto_id', 'datetime']).reset_index(drop=True)
     
     print(f"✅ Criptomonedas procesadas con éxito. Dimensión final: {df.shape}")
     return df
@@ -37,22 +38,17 @@ def limpiar_criptomonedas(ruta_origen: str) -> pd.DataFrame:
 def limpiar_stablecoins(ruta_origen: str) -> pd.DataFrame:
     """
     Carga y limpia el dataset de stablecoins (DefiLlama).
-    Normaliza nombres de columnas clave, gestiona tipos de datos y limpia duplicados.
     """
     if not os.path.exists(ruta_origen):
         raise FileNotFoundError(f"❌ No se encontró el archivo de stablecoins en: {ruta_origen}")
         
     print("⏳ Iniciando limpieza de stablecoins...")
     df = pd.read_csv(ruta_origen)
-    df_inicial = df.copy()
     
-    # 1. Homologar la columna temporal a 'fecha' para permitir cruces posteriores
-    if 'datetime' in df.columns:
-        df = df.rename(columns={'datetime': 'fecha'})
-        
-    df['fecha'] = pd.to_datetime(df['fecha']).dt.date
+    # 1. CAMBIO AQUÍ: Aseguramos que se llame 'datetime' y que esté en formato correcto
+    df['datetime'] = pd.to_datetime(df['datetime'])
     
-    # 2. Control de tipos numéricos en métricas específicas de stablecoins
+    # 2. Control de tipos numéricos
     cols_numericas = ['price', 'market_cap', 'peg_deviation', 'supply_change_1d', 
                       'supply_change_7d', 'price_volatility_3d']
     for col in cols_numericas:
@@ -60,27 +56,25 @@ def limpiar_stablecoins(ruta_origen: str) -> pd.DataFrame:
             df[col] = pd.to_numeric(df[col], errors='coerce')
             
     # 3. Tratamiento de registros corruptos o vacíos
-    df = df.dropna(subset=['fecha', 'stablecoin', 'price'])
-    df = df.drop_duplicates(subset=['fecha', 'stablecoin'], keep='last')
+    df = df.dropna(subset=['datetime', 'stablecoin', 'price'])
+    df = df.drop_duplicates(subset=['datetime', 'stablecoin'], keep='last')
     
     # 4. Ordenación lógica temporal por activo
-    df = df.sort_values(by=['stablecoin', 'fecha']).reset_index(drop=True)
+    df = df.sort_values(by=['stablecoin', 'datetime']).reset_index(drop=True)
     
     print(f"✅ Stablecoins procesadas con éxito. Dimensión final: {df.shape}")
     return df
 
 
-def ejecutar_pipeline_limpieza(ruta_cryptos_in: str, ruta_stables_in: str, carpeta_destino: str = "data"):
+def ejecutar_pipeline_limpieza(ruta_cryptos_in: str, ruta_stables_in: str, carpeta_destino: str = "data/clean"):
     """
     Función orquestadora que engloba los dos procesos de limpieza.
-    Carga los archivos raw, ejecuta las limpiezas modulares y guarda los resultados limpios 
-    listos para ser consumidos por el modelo analítico de alertas.
     """
     print("\n" + "="*60)
     print("🚀 INICIANDO PIPELINE CENTRAL DE LIMPIEZA Y DEPURACIÓN DE DATOS")
     print("="*60)
     
-    # Crear la carpeta destino si no existe
+    # Crear la subcarpeta clean de forma segura si no existe
     os.makedirs(carpeta_destino, exist_ok=True)
     
     # Ejecutar la limpieza de criptos
@@ -96,5 +90,5 @@ def ejecutar_pipeline_limpieza(ruta_cryptos_in: str, ruta_stables_in: str, carpe
     print(f"💾 Guardado dataset limpio de stablecoins en: {ruta_stables_out}\n")
     
     print("="*60)
-    print("🎉 ¡PIPELINE FINALIZADO CON ÉXITO! Tus datos están listos para el análisis.")
+    print("🎉 ¡PIPELINE FINALIZADO CON ÉXITO! Tus datos están listos en la zona 'clean'.")
     print("="*60)
