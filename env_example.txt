@@ -5,3 +5,6 @@ DB_NAME=criptoradar_db
 
 # Nueva variable para la ubicación de tus CSVs
 CARPETA_DATOS=datos_origen
+
+
+FICHERO_SQL=fichero_creacion_base_datos

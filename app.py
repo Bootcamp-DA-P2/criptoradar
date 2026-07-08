@@ -1,11 +1,11 @@
 import pandas as pd
 import os
-import sqlite3
 
 from src.funciones_criptos import ejecutar_pipeline_criptomonedas
 from src.funciones_stable_coins import obtener_historico_defillama, calcular_metricas_anomalidad
 from src.analisis_alertas import ejecutar_pipeline_alertas
 from utils.clean_function import ejecutar_pipeline_limpieza
+from src.carga_datos import crear_base_de_datos_si_not_exists, cargar_datos_desde_env
 
 # --- BLOQUE PRINCIPAL DE EJECUCIÓN ---
 if __name__ == "__main__":
@@ -45,27 +45,7 @@ if __name__ == "__main__":
             
             print("\n--- ¡PIPELINE MULTI-STABLECOIN EXITOSO! ---")
             print(f"Dimensiones del dataset global: {df_radar_completo.shape[0]} filas x {df_radar_completo.shape[1]} columnas")
-            
-            # === PERSISTENCIA EN BASE DE DATOS SQLITE ===
-            db_dir = "data"
-            if not os.path.exists(db_dir):
-                os.makedirs(db_dir)
-                
-            db_path = os.path.join(db_dir, "criptoradar.db")
-            print(f"\nConectando a la Base de Datos SQLite en: '{db_path}'...")
-            
-            conexion = sqlite3.connect(db_path)
-            
-            df_radar_completo.reset_index().to_sql(
-                name='historico_stablecoins', 
-                con=conexion, 
-                if_exists='replace', 
-                index=False
-            )
-            
-            conexion.close()
-            print("[SQLITE] ¡Éxito! Las filas se han guardado directamente en la tabla 'historico_stablecoins'.")
-            
+
             # Mantenemos la copia en CSV como respaldo
             df_radar_completo.to_csv("data/datos_preprocesados.csv")
             print("[CSV] Respaldo exportado correctamente en 'data/datos_preprocesados.csv'")
@@ -88,6 +68,23 @@ if __name__ == "__main__":
 
             #Ejecución del sistema de alertas
             ejecutar_pipeline_alertas()
+
+            # =================================================================
+            # === NUEVO: PERSISTENCIA Y CREACIÓN DE ESQUEMA EN MYSQL ===
+            # =================================================================
+            print("\n=========================================")
+            print("🗄️ INICIANDO EXPORTACIÓN A BASE DE DATOS RELACIONAL (MYSQL)")
+            print("=========================================")
+            try:
+                # Lee tu creacion_database.sql (desde la carpeta configurada) y crea la DB si no existe
+                crear_base_de_datos_si_not_exists()
+                
+                # Lee los CSV finales e inserta los datos respetando las claves foráneas
+                cargar_datos_desde_env()
+                print("=========================================\n")
+            except Exception as mysql_err:
+                print(f"❌ Error durante el volcado a MySQL: {mysql_err}")
+                print("=========================================\n")
             
         else:
             print("[ALERTA] No se pudo procesar ninguna stablecoin. Se cancela el módulo de alertas.")

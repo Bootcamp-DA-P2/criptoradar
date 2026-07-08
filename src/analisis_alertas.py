@@ -88,7 +88,7 @@ def ejecutar_pipeline_alertas():
     df_alertas['nivel_alerta'] = np.select(condiciones, resultados, default='0_normal')
 
     # 8. GUARDAR Y REVISAR TABLA GLOBAL DE ALERTAS
-    ruta_alertas_csv = "data/alertas_sistema_final.csv"
+    ruta_alertas_csv = "data/clean/alertas_sistema_final.csv"
     df_alertas.to_csv(ruta_alertas_csv, index=False)
     print(f"💾 Guardado resumen de alertas en: {ruta_alertas_csv}")
     print("\n📊 Resumen de filas por nivel de alerta:")
@@ -141,7 +141,7 @@ def ejecutar_pipeline_alertas():
         df_criticas['narrativa_alerta'] = frases_documentacion
         
         # Guardamos las alertas críticas con su explicación textual
-        ruta_criticas_csv = "data/alertas_criticas_informe.csv"
+        ruta_criticas_csv = "data/clean/alertas_criticas_informe.csv"
         df_criticas.to_csv(ruta_criticas_csv, index=False)
         print(f"🎯 ¡Éxito! Informe con narrativas guardado en: {ruta_criticas_csv}")
         
