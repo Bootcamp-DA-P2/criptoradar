@@ -5,6 +5,7 @@ import sqlite3
 from src.funciones_criptos import ejecutar_pipeline_criptomonedas
 from src.funciones_stable_coins import obtener_historico_defillama, calcular_metricas_anomalidad
 from src.analisis_alertas import ejecutar_pipeline_alertas
+from utils.limpieza import ejecutar_pipeline_limpieza
 
 # --- BLOQUE PRINCIPAL DE EJECUCIÓN ---
 if __name__ == "__main__":
@@ -69,6 +70,22 @@ if __name__ == "__main__":
             df_radar_completo.to_csv("data/datos_preprocesados.csv")
             print("[CSV] Respaldo exportado correctamente en 'data/datos_preprocesados.csv'")
             
+            # Ejecucción limpieza 
+
+            RUTA_CRYPTOS_RAW = "data/criptoradar_crypto_final.csv"
+            RUTA_STABLES_RAW = "data/datos_preprocesados.csv"
+            
+            try:
+                ejecutar_pipeline_limpieza(
+                    ruta_cryptos_in=RUTA_CRYPTOS_RAW, 
+                    ruta_stables_in=RUTA_STABLES_RAW,
+                    carpeta_destino="data/clean"
+                )
+            except Exception as e:
+                print(f"\n❌ Hubo un error durante la ejecución del pipeline: {e}")
+
+
+
             #Ejecución del sistema de alertas
             ejecutar_pipeline_alertas()
             

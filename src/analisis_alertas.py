@@ -9,8 +9,8 @@ def ejecutar_pipeline_alertas():
     print("="*50)
 
     # 1. CARGAR Y PREPARAR LOS DATOS
-    ruta_cryptos = "data/criptoradar_crypto_final_clean.csv"
-    ruta_stables = "data/datos_preprocesados_clean.csv"
+    ruta_cryptos = "data/clean/criptoradar_crypto_final_clean.csv"
+    ruta_stables = "data/clean/datos_preprocesados_clean.csv"
 
     if not os.path.exists(ruta_cryptos) or not os.path.exists(ruta_stables):
         print("❌ [ERROR] No se encontraron los archivos necesarios en 'data/'. Ejecuta primero el pipeline de extracción.")
