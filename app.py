@@ -4,8 +4,8 @@ import os
 from src.funciones_criptos import ejecutar_pipeline_criptomonedas
 from src.funciones_stable_coins import obtener_historico_defillama, calcular_metricas_anomalidad
 from src.analisis_alertas import ejecutar_pipeline_alertas
-from src.carga_datos import crear_base_de_datos_si_not_exists, cargar_datos_desde_env
 from utils.clean_function import ejecutar_pipeline_limpieza
+from src.carga_datos import crear_base_de_datos_si_not_exists, cargar_datos_desde_env
 
 # --- BLOQUE PRINCIPAL DE EJECUCIÓN ---
 if __name__ == "__main__":
@@ -63,6 +63,8 @@ if __name__ == "__main__":
                 )
             except Exception as e:
                 print(f"\n❌ Hubo un error durante la ejecución del pipeline: {e}")
+
+
 
             #Ejecución del sistema de alertas
             ejecutar_pipeline_alertas()

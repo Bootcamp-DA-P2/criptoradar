@@ -9,8 +9,8 @@ def ejecutar_pipeline_alertas():
     print("="*50)
 
     # 1. CARGAR Y PREPARAR LOS DATOS
-    ruta_cryptos = "data/criptoradar_crypto_final_clean.csv"
-    ruta_stables = "data/datos_preprocesados_clean.csv"
+    ruta_cryptos = "data/clean/criptoradar_crypto_final_clean.csv"
+    ruta_stables = "data/clean/datos_preprocesados_clean.csv"
 
     if not os.path.exists(ruta_cryptos) or not os.path.exists(ruta_stables):
         print("❌ [ERROR] No se encontraron los archivos necesarios en 'data/'. Ejecuta primero el pipeline de extracción.")
@@ -20,6 +20,7 @@ def ejecutar_pipeline_alertas():
     df_cryptos = pd.read_csv(ruta_cryptos)
     df_stables = pd.read_csv(ruta_stables)
 
+    #Volvemos a convertir a fecha la columna pues al leer de un csv no se guarda el formato fecha
     df_cryptos['datetime'] = pd.to_datetime(df_cryptos['datetime'])
     df_stables['datetime'] = pd.to_datetime(df_stables['datetime'])
 
@@ -87,7 +88,7 @@ def ejecutar_pipeline_alertas():
     df_alertas['nivel_alerta'] = np.select(condiciones, resultados, default='0_normal')
 
     # 8. GUARDAR Y REVISAR TABLA GLOBAL DE ALERTAS
-    ruta_alertas_csv = "data/alertas_sistema_final.csv"
+    ruta_alertas_csv = "data/clean/alertas_sistema_final.csv"
     df_alertas.to_csv(ruta_alertas_csv, index=False)
     print(f"💾 Guardado resumen de alertas en: {ruta_alertas_csv}")
     print("\n📊 Resumen de filas por nivel de alerta:")
@@ -140,7 +141,7 @@ def ejecutar_pipeline_alertas():
         df_criticas['narrativa_alerta'] = frases_documentacion
         
         # Guardamos las alertas críticas con su explicación textual
-        ruta_criticas_csv = "data/alertas_criticas_informe.csv"
+        ruta_criticas_csv = "data/clean/alertas_criticas_informe.csv"
         df_criticas.to_csv(ruta_criticas_csv, index=False)
         print(f"🎯 ¡Éxito! Informe con narrativas guardado en: {ruta_criticas_csv}")
         
