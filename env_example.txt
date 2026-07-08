@@ -1,0 +1,7 @@
+DB_USER=root
+DB_PASS=tu_password
+DB_HOST=localhost
+DB_NAME=criptoradar_db
+
+# Nueva variable para la ubicación de tus CSVs
+CARPETA_DATOS=datos_origen
