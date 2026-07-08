@@ -5,6 +5,8 @@ import sqlite3
 from src.funciones_criptos import ejecutar_pipeline_criptomonedas
 from src.funciones_stable_coins import obtener_historico_defillama, calcular_metricas_anomalidad
 from src.analisis_alertas import ejecutar_pipeline_alertas
+from src.carga_datos import crear_base_de_datos_si_not_exists, cargar_datos_desde_env
+from utils.clean_function import ejecutar_pipeline_limpieza
 
 # --- BLOQUE PRINCIPAL DE EJECUCIÓN ---
 if __name__ == "__main__":
@@ -69,8 +71,41 @@ if __name__ == "__main__":
             df_radar_completo.to_csv("data/datos_preprocesados.csv")
             print("[CSV] Respaldo exportado correctamente en 'data/datos_preprocesados.csv'")
             
+            # Ejecucción limpieza 
+
+            RUTA_CRYPTOS_RAW = "data/criptoradar_crypto_final.csv"
+            RUTA_STABLES_RAW = "data/datos_preprocesados.csv"
+            
+            try:
+                ejecutar_pipeline_limpieza(
+                    ruta_cryptos_in=RUTA_CRYPTOS_RAW, 
+                    ruta_stables_in=RUTA_STABLES_RAW,
+                    carpeta_destino="data/clean"
+                )
+            except Exception as e:
+                print(f"\n❌ Hubo un error durante la ejecución del pipeline: {e}")
+
+
+
             #Ejecución del sistema de alertas
             ejecutar_pipeline_alertas()
+
+            # =================================================================
+            # === NUEVO: PERSISTENCIA Y CREACIÓN DE ESQUEMA EN MYSQL ===
+            # =================================================================
+            print("\n=========================================")
+            print("🗄️ INICIANDO EXPORTACIÓN A BASE DE DATOS RELACIONAL (MYSQL)")
+            print("=========================================")
+            try:
+                # Lee tu creacion_database.sql (desde la carpeta configurada) y crea la DB si no existe
+                crear_base_de_datos_si_not_exists()
+                
+                # Lee los CSV finales e inserta los datos respetando las claves foráneas
+                cargar_datos_desde_env()
+                print("=========================================\n")
+            except Exception as mysql_err:
+                print(f"❌ Error durante el volcado a MySQL: {mysql_err}")
+                print("=========================================\n")
             
         else:
             print("[ALERTA] No se pudo procesar ninguna stablecoin. Se cancela el módulo de alertas.")
