@@ -102,6 +102,8 @@ def obtener_historico_defillama(stablecoin_id=2, nombre_coin=None):
     df = df.join(df_price, how="inner")
     df.rename(columns={"price_real": "price"}, inplace=True)
 
+    df.index.name = 'datetime'
+
     return df
 
 def calcular_metricas_anomalidad(df):
@@ -128,5 +130,7 @@ def calcular_metricas_anomalidad(df):
     df_features['price_volatility_3d'] = df_features['price'].rolling(window=3).std()
     
     df_features.dropna(inplace=True)
+    
+    df_features.index.name = 'datetime'
     
     return df_features
