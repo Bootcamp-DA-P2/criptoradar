@@ -1,7 +1,7 @@
 import requests
 import pandas as pd
 import numpy as np
-import time  # <-- CAMBIO: nuevo import
+import time  
 
 GECKO_IDS = {
     "USDT": "tether", "USDC": "usd-coin", "DAI": "dai", "BUSD": "binance-usd",
@@ -20,14 +20,14 @@ def obtener_precio_real(nombre_coin, start_ts, span, period="1d"):
     coin = f"coingecko:{gecko_id}"
     url = f"https://coins.llama.fi/chart/{coin}"
 
-    MAX_SPAN = 500  # <-- NUEVO: límite duro de la API (1 coin x 500 timestamps)
-    SEGUNDOS_POR_PERIODO = 86400 if period == "1d" else 3600  # <-- NUEVO: soporta "1d"/"1h"
+    MAX_SPAN = 500  #límite duro de la API (1 coin x 500 timestamps)
+    SEGUNDOS_POR_PERIODO = 86400 if period == "1d" else 3600  # soporta "1d"/"1h"
 
     all_points = []
     current_start = start_ts
     remaining = span
 
-    while remaining > 0:  # <-- NUEVO: bucle de paginación
+    while remaining > 0:  # bucle de paginación
         chunk_span = min(remaining, MAX_SPAN)
         params = {"start": current_start, "span": chunk_span, "period": period}
         response = requests.get(url, params=params)
@@ -41,9 +41,9 @@ def obtener_precio_real(nombre_coin, start_ts, span, period="1d"):
         all_points.extend(puntos)
 
         remaining -= chunk_span
-        current_start += chunk_span * SEGUNDOS_POR_PERIODO  # <-- avanza el inicio del siguiente bloque
+        current_start += chunk_span * SEGUNDOS_POR_PERIODO  
 
-    df_price = pd.DataFrame(all_points).drop_duplicates(subset="timestamp")  # <-- NUEVO: por si hay solapes
+    df_price = pd.DataFrame(all_points).drop_duplicates(subset="timestamp")  
     df_price["datetime"] = pd.to_datetime(df_price["timestamp"], unit="s").dt.normalize()
     df_price.set_index("datetime", inplace=True)
     return df_price[["price"]].rename(columns={"price": "price_real"})
