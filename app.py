@@ -27,7 +27,7 @@ if __name__ == "__main__":
             print(f"=========================================")
             
             try:
-                df_stable = obtener_historico_defillama(stablecoin_id=id_coin)
+                df_stable = obtener_historico_defillama(stablecoin_id=id_coin, nombre_coin=nombre_coin)
                 df_features = calcular_metricas_anomalidad(df_stable)
                 
                 df_features['stablecoin'] = nombre_coin
