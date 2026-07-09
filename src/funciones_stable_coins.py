@@ -8,6 +8,7 @@ GECKO_IDS = {
     "FDUSD": "first-digital-usd", "TUSD": "true-usd", "USDD": "usdd",
     "FRAX": "frax", "PYUSD": "paypal-usd", "USDE": "ethena-usde",
 }
+
 def obtener_precio_real(nombre_coin, start_ts, span, period="1d"):
     """
     Descarga precio histórico real desde coins.llama.fi, paginando en bloques
@@ -20,14 +21,14 @@ def obtener_precio_real(nombre_coin, start_ts, span, period="1d"):
     coin = f"coingecko:{gecko_id}"
     url = f"https://coins.llama.fi/chart/{coin}"
 
-    MAX_SPAN = 500  #límite duro de la API (1 coin x 500 timestamps)
-    SEGUNDOS_POR_PERIODO = 86400 if period == "1d" else 3600  # soporta "1d"/"1h"
+    MAX_SPAN = 500  # límite duro de la API
+    SEGUNDOS_POR_PERIODO = 86400 if period == "1d" else 3600
 
     all_points = []
     current_start = start_ts
     remaining = span
 
-    while remaining > 0:  # bucle de paginación
+    while remaining > 0:
         chunk_span = min(remaining, MAX_SPAN)
         params = {"start": current_start, "span": chunk_span, "period": period}
         response = requests.get(url, params=params)
@@ -37,11 +38,19 @@ def obtener_precio_real(nombre_coin, start_ts, span, period="1d"):
             raise Exception(f"Error en DefiLlama coins ({nombre_coin}): {response.status_code} - {response.text}")
 
         data = response.json()
-        puntos = data["coins"][coin]["prices"]
+        
+        # Validación de que existan datos en la respuesta
+        if coin not in data.get("coins", {}):
+            break
+            
+        puntos = data["coins"][coin].get("prices", [])
         all_points.extend(puntos)
 
         remaining -= chunk_span
         current_start += chunk_span * SEGUNDOS_POR_PERIODO  
+
+    if not all_points:
+        return pd.DataFrame(columns=["price_real"])
 
     df_price = pd.DataFrame(all_points).drop_duplicates(subset="timestamp")  
     df_price["datetime"] = pd.to_datetime(df_price["timestamp"], unit="s").dt.normalize()
@@ -55,7 +64,7 @@ def obtener_historico_defillama(stablecoin_id=2, nombre_coin=None):
     url = f"https://stablecoins.llama.fi/stablecoincharts/all?stablecoin={stablecoin_id}"
     print(f"Solicitando datos de suministro a DefiLlama para ID: {stablecoin_id}...")
     response = requests.get(url)
-    time.sleep(1)  # <-- CAMBIO: pausa tras la llamada a stablecoins.llama.fi
+    time.sleep(1)
 
     if response.status_code != 200:
         raise Exception(f"Error en DefiLlama: {response.status_code}")
@@ -83,10 +92,13 @@ def obtener_historico_defillama(stablecoin_id=2, nombre_coin=None):
     df.set_index('datetime', inplace=True)
     df.drop(columns=['timestamp'], inplace=True)
 
+    # Calculamos el span real en días naturales, no por longitud de filas
     start_ts = int(df.index.min().timestamp())
-    span = len(df)
+    span = (df.index.max() - df.index.min()).days + 1
+    
     df_price = obtener_precio_real(nombre_coin, start_ts=start_ts, span=span, period="1d")
 
+    # Unimos usando inner para asegurar que se alineen perfectamente por fecha
     df = df.join(df_price, how="inner")
     df.rename(columns={"price_real": "price"}, inplace=True)
 
@@ -96,12 +108,19 @@ def calcular_metricas_anomalidad(df):
     """
     Calcula features eliminando las distorsiones de los primeros registros históricos.
     """
+    if df.empty:
+        return df
+        
     df_features = df.copy()
     
     df_features['price'] = pd.to_numeric(df_features['price']).astype(float)
     df_features['market_cap'] = pd.to_numeric(df_features['market_cap']).astype(float)
     
+    # Filtro para evitar ruido de proyectos recién nacidos o sin liquidez
     df_features = df_features[df_features['market_cap'] > 100000] 
+    
+    # Asegurar orden cronológico antes de aplicar ventanas móviles
+    df_features.sort_index(inplace=True)
     
     df_features['peg_deviation'] = (1.00 - df_features['price']).abs()
     df_features['supply_change_1d'] = df_features['market_cap'].pct_change(periods=1)
