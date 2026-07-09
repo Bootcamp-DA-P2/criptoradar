@@ -29,25 +29,23 @@ def obtener_precio_real(nombre_coin, start_ts, span, period="1d"):
     remaining = span
 
     while remaining > 0:
-        chunk_span = min(remaining, MAX_SPAN)
-        params = {"start": current_start, "span": chunk_span, "period": period}
-        response = requests.get(url, params=params)
-        time.sleep(1)
+            chunk_span = min(remaining, MAX_SPAN)
+            params = {"start": current_start, "span": chunk_span, "period": period}
+            response = requests.get(url, params=params)
+            time.sleep(1)
 
-        if response.status_code != 200:
-            raise Exception(f"Error en DefiLlama coins ({nombre_coin}): {response.status_code} - {response.text}")
+            if response.status_code != 200:
+                raise Exception(f"Error en DefiLlama coins ({nombre_coin}): {response.status_code} - {response.text}")
 
-        data = response.json()
-        
-        # Validación de que existan datos en la respuesta
-        if coin not in data.get("coins", {}):
-            break
-            
-        puntos = data["coins"][coin].get("prices", [])
-        all_points.extend(puntos)
+            data = response.json()
 
-        remaining -= chunk_span
-        current_start += chunk_span * SEGUNDOS_POR_PERIODO  
+            if coin in data.get("coins", {}):                     
+                puntos = data["coins"][coin].get("prices", [])
+                all_points.extend(puntos)
+            # si no encontramos datos para ese bloque c simplemente no añadimos nada y seguimos al siguiente bloque 
+
+            remaining -= chunk_span
+            current_start += chunk_span * SEGUNDOS_POR_PERIODO 
 
     if not all_points:
         return pd.DataFrame(columns=["price_real"])
