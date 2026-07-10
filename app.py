@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
         stablecoins_radar = {
             1: "USDT", 2: "USDC", 3: "DAI", 4: "BUSD", 5: "FDUSD",
-            6: "TUSD", 7: "USDD", 8: "FRAX", 9: "PYUSD", 10: "USDE"
+            6: "TUSD", 7: "USDD", 8: "FRAX", 9: "PYUSD", 10: "USDE",11: "USDS"
         }
         
         datasets_procesados = []

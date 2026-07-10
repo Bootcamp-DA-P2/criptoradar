@@ -6,7 +6,7 @@ import time
 GECKO_IDS = {
     "USDT": "tether", "USDC": "usd-coin", "DAI": "dai", "BUSD": "binance-usd",
     "FDUSD": "first-digital-usd", "TUSD": "true-usd", "USDD": "usdd",
-    "FRAX": "frax", "PYUSD": "paypal-usd", "USDE": "ethena-usde",
+    "FRAX": "frax", "PYUSD": "paypal-usd", "USDE": "ethena-usde", "USDS": "stable-usd",
 }
 
 def obtener_precio_real(nombre_coin, start_ts, span, period="1d"):
