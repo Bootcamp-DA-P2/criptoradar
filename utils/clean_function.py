@@ -4,7 +4,7 @@ import numpy as np
 
 def limpiar_criptomonedas(ruta_origen: str) -> pd.DataFrame:
     """
-    Carga y limpia el dataset de criptomonedas tradicionales (Bitget).
+    Carga, limpia y calcula la volatilidad para todas las criptomonedas tradicionales (Bitget).
     """
     if not os.path.exists(ruta_origen):
         raise FileNotFoundError(f"❌ No se encontró el archivo de criptomonedas en: {ruta_origen}")
@@ -12,9 +12,8 @@ def limpiar_criptomonedas(ruta_origen: str) -> pd.DataFrame:
     print("⏳ Iniciando limpieza de criptomonedas tradicionales...")
     df = pd.read_csv(ruta_origen)
     
-    # 1. CAMBIO AQUÍ: Convertimos a datetime y mantenemos el nombre 'datetime'
+    # 1. Convertimos a datetime y mantenemos el nombre 'datetime'
     df['datetime'] = pd.to_datetime(df['fecha'])
-    # Si venía una columna vieja llamada 'fecha', la eliminamos para no duplicar
     if 'fecha' in df.columns and 'datetime' != 'fecha':
         df = df.drop(columns=['fecha'])
     
@@ -28,10 +27,30 @@ def limpiar_criptomonedas(ruta_origen: str) -> pd.DataFrame:
     df = df.dropna(subset=['datetime', 'crypto_id', 'close'])
     df = df.drop_duplicates(subset=['datetime', 'crypto_id'], keep='last')
     
-    # 4. Ordenación lógica temporal por activo
+    # 4. Ordenación lógica temporal por activo (CRUCIAL antes de calcular rolling/pct_change)
     df = df.sort_values(by=['crypto_id', 'datetime']).reset_index(drop=True)
     
-    print(f"✅ Criptomonedas procesadas con éxito. Dimensión final: {df.shape}")
+    # =====================================================================
+    # 🚀 NUEVO PASO: CÁLCULO DE LA VOLATILIDAD POR CRIPTOMONEDA
+    # =====================================================================
+    print("📈 Calculando volatilidad de 3 días agrupada por activo...")
+    
+    # 5. Calcular retornos diarios de forma aislada para cada criptomoneda
+    df['retornos_diarios'] = df.groupby('crypto_id')['close'].pct_change()
+    
+    # 6. Calcular la desviación estándar móvil de 3 días para cada criptomoneda
+    df['volatility_3d'] = (
+        df.groupby('crypto_id')['retornos_diarios']
+        .rolling(window=3)
+        .std()
+        .reset_index(level=0, drop=True)
+    )
+    
+    # 7. Eliminar columna auxiliar de retornos diarios
+    df = df.drop(columns=['retornos_diarios'])
+    # =====================================================================
+
+    print(f"✅ Criptomonedas procesadas y enriquecidas con éxito. Dimensión final: {df.shape}")
     return df
 
 
