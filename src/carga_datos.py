@@ -25,7 +25,6 @@ if not all([DB_USER, DB_PASS, DB_HOST, DB_NAME, CARPETA_DATOS, FICHERO_SQL]):
 
 def crear_base_de_datos_si_not_exists():
     """Conecta al servidor MySQL base para ejecutar el script de estructura desde la carpeta de datos."""
-    # CONSTRUCCIÓN DE LA RUTA: Ahora busca dentro de la carpeta configurada (ej: data/creacion_database.sql)
     ruta_sql = os.path.join(CARPETA_DATOS, FICHERO_SQL)
     
     if not os.path.exists(ruta_sql):
@@ -63,8 +62,32 @@ def conectar_db():
         sys.exit(1)
 
 
+def filtrar_duplicados(df, tabla, columnas_clave, engine):
+    """Filtra el DataFrame para conservar solo las filas que no existen en la BD."""
+    try:
+        # Consultar solo las columnas clave de la base de datos para no saturar la memoria
+        columnas_str = ", ".join(columnas_clave)
+        query = f"SELECT {columnas_str} FROM {tabla}"
+        df_existente = pd.read_sql(query, con=engine)
+        
+        if df_existente.empty:
+            return df
+
+        # Asegurar tipos de datos consistentes para el cruce (sobre todo con strings/IDs)
+        for col in columnas_clave:
+            df[col] = df[col].astype(df_existente[col].dtype)
+
+        # Hacemos un merge left con indicador para quedarnos solo con lo que está 'left_only'
+        enlace = df.merge(df_existente, on=columnas_clave, how='left', indicator=True)
+        df_filtrado = enlace[enlace['_merge'] == 'left_only'].drop(columns=['_merge'])
+        
+        return df_filtrado
+    except Exception:
+        # Si la tabla está vacía o da error porque no existe, devolvemos todo el DF
+        return df
+
+
 def cargar_datos_desde_env():
-    # Mapeo y construcción de rutas relativas usando la variable de entorno
     archivos = {
         "preprocesados": os.path.join(CARPETA_DATOS, "datos_preprocesados_clean.csv"),
         "sistema": os.path.join(CARPETA_DATOS, "alertas_sistema_final.csv"),
@@ -72,14 +95,13 @@ def cargar_datos_desde_env():
         "crypto": os.path.join(CARPETA_DATOS, "criptoradar_crypto_final_clean.csv")
     }
     
-    # Comprobar que los archivos existan en el directorio configurado antes de operar
     for nombre, ruta in archivos.items():
         if not os.path.exists(ruta):
             print(f"❌ Error: No se encuentra el archivo de {nombre} en: {ruta}")
             sys.exit(1)
 
     engine = conectar_db()
-    print(f"🔌 Conexión exitosa a MySQL en [{DB_HOST}]. Procesando archivos de '{CARPETA_DATOS}'...\n")
+    print(f"🔌 Conexión exitosa a MySQL en [{DB_HOST}]. Procesando archivos...\n")
 
     # ==========================================
     # PASO 1: TABLAS MAESTRAS (DIMENSIONES)
@@ -90,14 +112,24 @@ def cargar_datos_desde_env():
     df_prep = pd.read_csv(archivos["preprocesados"])
     dim_stablecoins = df_prep[['stablecoin_id', 'stablecoin']].drop_duplicates()
     dim_stablecoins.columns = ['stablecoin_id', 'nombre_stablecoin']
-    dim_stablecoins.to_sql('Stablecoins', con=engine, if_exists='append', index=False)
-    print("   ✅ Stablecoins sincronizada de forma correcta.")
+    
+    dim_stablecoins = filtrar_duplicados(dim_stablecoins, 'Stablecoins', ['stablecoin_id'], engine)
+    if not dim_stablecoins.empty:
+        dim_stablecoins.to_sql('Stablecoins', con=engine, if_exists='append', index=False)
+        print(f"   ✅ Stablecoins: Se insertaron {len(dim_stablecoins)} nuevos registros.")
+    else:
+        print("   ℹ️ Stablecoins: Sin nuevos datos que añadir.")
 
     # Dim_Cryptos
     df_crypto = pd.read_csv(archivos["crypto"])
     dim_cryptos = pd.DataFrame(df_crypto['crypto_id'].unique(), columns=['crypto_id'])
-    dim_cryptos.to_sql('Cryptos', con=engine, if_exists='append', index=False)
-    print("   ✅ Cryptos sincronizada de forma correcta.\n")
+    
+    dim_cryptos = filtrar_duplicados(dim_cryptos, 'Cryptos', ['crypto_id'], engine)
+    if not dim_cryptos.empty:
+        dim_cryptos.to_sql('Cryptos', con=engine, if_exists='append', index=False)
+        print(f"   ✅ Cryptos: Se insertaron {len(dim_cryptos)} nuevos registros.\n")
+    else:
+        print("   ℹ️ Cryptos: Sin nuevos datos que añadir.\n")
 
     # ==========================================
     # PASO 2: TABLAS DE HECHOS (MÉTRICAS COHERENTES)
@@ -107,34 +139,58 @@ def cargar_datos_desde_env():
     # Fact_Preprocesados_Historico
     cols_prep = ['datetime', 'stablecoin_id', 'price', 'market_cap', 'peg_deviation', 
                 'supply_change_1d', 'supply_change_7d', 'price_volatility_3d']
-    df_prep[cols_prep].to_sql('Preprocesados_Historico', con=engine, if_exists='append', index=False)
-    print("   🔹 Preprocesados_Historico volcada.")
+    df_prep_hechos = df_prep[cols_prep].drop_duplicates(subset=['datetime', 'stablecoin_id'])
+    df_prep_hechos = filtrar_duplicados(df_prep_hechos, 'Preprocesados_Historico', ['datetime', 'stablecoin_id'], engine)
+    
+    if not df_prep_hechos.empty:
+        df_prep_hechos.to_sql('Preprocesados_Historico', con=engine, if_exists='append', index=False)
+        print(f"   🔹 Preprocesados_Historico: {len(df_prep_hechos)} filas nuevas añadidas.")
+    else:
+        print("   ℹ️ Preprocesados_Historico: Al día. No hay datos nuevos.")
 
     # Fact_Alertas_Sistema
     df_sys = pd.read_csv(archivos["sistema"])
     cols_sys = ['datetime', 'stablecoin_id', 'anomaly_score', 'is_anomaly_stablecoin', 
                 'market_volatility', 'market_stress', 'nivel_alerta']
-    df_sys[cols_sys].to_sql('Alertas_Sistema', con=engine, if_exists='append', index=False)
-    print("   🔹 Alertas_Sistema volcada.")
+    df_sys_hechos = df_sys[cols_sys].drop_duplicates(subset=['datetime', 'stablecoin_id'])
+    df_sys_hechos = filtrar_duplicados(df_sys_hechos, 'Alertas_Sistema', ['datetime', 'stablecoin_id'], engine)
+    
+    if not df_sys_hechos.empty:
+        df_sys_hechos.to_sql('Alertas_Sistema', con=engine, if_exists='append', index=False)
+        print(f"   🔹 Alertas_Sistema: {len(df_sys_hechos)} filas nuevas añadidas.")
+    else:
+        print("   ℹ️ Alertas_Sistema: Al día. No hay datos nuevos.")
 
     # Fact_Alertas_Criticas
     df_crit = pd.read_csv(archivos["criticas"])
     cols_crit = ['datetime', 'stablecoin_id', 'nivel_alerta', 'btc_return', 
                 'eth_return', 'xrp_return', 'sol_return', 'narrativa_alerta']
-    df_crit[cols_crit].to_sql('Alertas_Criticas', con=engine, if_exists='append', index=False)
-    print("   🔹 Alertas_Criticas volcada.")
+    df_crit_hechos = df_crit[cols_crit].drop_duplicates(subset=['datetime', 'stablecoin_id'])
+    df_crit_hechos = filtrar_duplicados(df_crit_hechos, 'Alertas_Criticas', ['datetime', 'stablecoin_id'], engine)
+    
+    if not df_crit_hechos.empty:
+        df_crit_hechos.to_sql('Alertas_Criticas', con=engine, if_exists='append', index=False)
+        print(f"   🔹 Alertas_Criticas: {len(df_crit_hechos)} filas nuevas añadidas.")
+    else:
+        print("   ℹ️ Alertas_Criticas: Al día. No hay datos nuevos.")
 
     # Fact_Crypto_Precios
     cols_crypto = ['datetime', 'crypto_id', 'open', 'high', 'low', 'close', 'volume']
-    df_crypto[cols_crypto].to_sql('Crypto_Precios', con=engine, if_exists='append', index=False)
-    print("   🔹 Crypto_Precios volcada.")
+    df_crypto_hechos = df_crypto[cols_crypto].drop_duplicates(subset=['datetime', 'crypto_id'])
+    df_crypto_hechos = filtrar_duplicados(df_crypto_hechos, 'Crypto_Precios', ['datetime', 'crypto_id'], engine)
+    
+    if not df_crypto_hechos.empty:
+        df_crypto_hechos.to_sql('Crypto_Precios', con=engine, if_exists='append', index=False)
+        print(f"   🔹 Crypto_Precios: {len(df_crypto_hechos)} filas nuevas añadidas.")
+    else:
+        print("   ℹ️ Crypto_Precios: Al día. No hay datos nuevos.")
 
-    print(f"\n🚀 Pipeline completado. Todos los datos de '{CARPETA_DATOS}' están en MySQL.")
+    print(f"\n🚀 Pipeline completado de forma incremental. Todos los datos nuevos están en MySQL.")
 
 
 if __name__ == '__main__':
     # 1. Ejecutar inicialización de estructura SQL buscando el archivo en la carpeta de datos
     crear_base_de_datos_si_not_exists()
     
-    # 2. Cargar los datos de los CSV
+    # 2. Cargar los datos de los CSV de forma incremental
     cargar_datos_desde_env()
