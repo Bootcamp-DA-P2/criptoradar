@@ -126,8 +126,6 @@ with col2:
 • MySQL
 
 • SQL
-
-• BigQuery
 """)
 
 with col3:
@@ -137,8 +135,6 @@ with col3:
 • Bitget
 
 • DefiLlama
-
-• Power BI
 
 • GitHub
 """)

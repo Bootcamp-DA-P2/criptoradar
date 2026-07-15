@@ -152,5 +152,5 @@ La información obtenida desde las APIs se procesa mediante un pipeline ETL.
 
 Posteriormente los datos limpios se almacenan en una base de datos MySQL,
 desde donde pueden consultarse utilizando SQL para realizar análisis
-estadísticos y alimentar dashboards como Power BI y Streamlit.
+estadísticos y alimentar dashboards como Streamlit.
 """)

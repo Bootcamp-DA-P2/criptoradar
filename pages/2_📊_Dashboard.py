@@ -257,3 +257,96 @@ st.download_button(
 
     mime="text/csv"
 )
+
+
+# ==================================
+# COMPARATIVA POR TIPO DE RESPALDO
+# ==================================
+# NOTA: esta sección compara TODAS las stablecoins entre sí (usa "df" completo,
+# no "datos" filtrado por el selectbox de arriba), agrupadas por tipo_respaldo
+# (columna calculada en cargar_stable() con la misma clasificación que el EDA).
+
+st.divider()
+
+st.subheader("🧬 Comparativa por tipo de respaldo")
+
+st.markdown("""
+Comparamos `peg_deviation` y volatilidad agrupando por **tipo de respaldo**
+(mecanismo: fiat, cripto-colateralizado, algorítmico, sintético) en vez de por
+stablecoin individual, para ver si el mecanismo importa más que el tamaño o
+la reputación de la moneda.
+""")
+
+df_respaldo = df_stable.copy()
+
+# Evita valores <= 0 en escala logarítmica
+df_respaldo["price_volatility_3d_clip"] = df_respaldo["price_volatility_3d"].clip(lower=1e-6)
+
+# Orden por mediana de peg_deviation: de más estable a menos estable
+orden_respaldo = (
+    df_respaldo.groupby("tipo_respaldo")["peg_deviation"]
+    .median()
+    .sort_values()
+    .index.tolist()
+)
+
+col1, col2 = st.columns(2)
+
+with col1:
+
+    fig6 = px.box(
+        df_respaldo,
+        x="tipo_respaldo",
+        y="peg_deviation",
+        color="tipo_respaldo",
+        category_orders={"tipo_respaldo": orden_respaldo},
+        log_y=True,
+        title="Peg Deviation por tipo de respaldo"
+    )
+
+    fig6.update_layout(
+        template="plotly_white",
+        height=450,
+        title_x=0.5,
+        showlegend=False,
+        xaxis_title=""
+    )
+
+    fig6.update_xaxes(tickangle=35)
+
+    st.plotly_chart(
+        fig6,
+        use_container_width=True
+    )
+
+with col2:
+
+    fig7 = px.box(
+        df_respaldo,
+        x="tipo_respaldo",
+        y="price_volatility_3d_clip",
+        color="tipo_respaldo",
+        category_orders={"tipo_respaldo": orden_respaldo},
+        log_y=True,
+        title="Volatilidad 3d por tipo de respaldo"
+    )
+
+    fig7.update_layout(
+        template="plotly_white",
+        height=450,
+        title_x=0.5,
+        showlegend=False,
+        xaxis_title=""
+    )
+
+    fig7.update_xaxes(tickangle=35)
+
+    st.plotly_chart(
+        fig7,
+        use_container_width=True
+    )
+
+st.info("""
+Orden de izquierda a derecha: mecanismo de respaldo más estable → menos estable,
+según la mediana de `peg_deviation`.
+""")

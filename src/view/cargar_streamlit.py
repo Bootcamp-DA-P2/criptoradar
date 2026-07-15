@@ -31,6 +31,23 @@ def cargar_crypto():
     df["datetime"] = pd.to_datetime(df["datetime"])
     return df
 
+
+def clasificar_respaldo_real(coin):
+    if coin in ['USDT', 'USDC', 'BUSD', 'PYUSD', 'TUSD', 'FDUSD']:
+        return 'Fiat-Backed'
+    elif coin in ['DAI']:
+        return 'Crypto-Backed'
+    elif coin in ['FRAX']:
+        return 'Fractional-Algorithmic'
+    elif coin in ['USDD']:
+        return 'Algorithmic'
+    elif coin in ['USDE']:
+        return 'Arbitraje de Derivados / Cripto'
+    else:
+        return 'No Clasificado'
+ 
+
+
 # 3. Extraer datos de Stablecoins de la Base de Datos
 @st.cache_data
 def cargar_stable():
@@ -50,4 +67,7 @@ def cargar_stable():
     
     # Aseguramos el tipo de dato datetime
     df["datetime"] = pd.to_datetime(df["datetime"])
+    df["tipo_respaldo"] = df["stablecoin"].apply(clasificar_respaldo_real)
+    return df
+
     return df
