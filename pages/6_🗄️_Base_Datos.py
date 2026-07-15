@@ -67,7 +67,7 @@ st.code("""
 SELECT
     crypto_id,
     AVG(close) AS precio_promedio
-FROM criptomonedas
+FROM cryptos
 GROUP BY crypto_id;
 """, language="sql")
 
@@ -119,7 +119,7 @@ st.code("""
 SELECT
     crypto_id,
     MAX(high) AS maximo_historico
-FROM criptomonedas
+FROM cryptos
 GROUP BY crypto_id;
 """, language="sql")
 
