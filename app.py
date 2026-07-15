@@ -1,11 +1,11 @@
 import pandas as pd
 import os
 
-from src.funciones_criptos import ejecutar_pipeline_criptomonedas
-from src.funciones_stable_coins import obtener_historico_defillama, calcular_metricas_anomalidad
-from src.analisis_alertas import ejecutar_pipeline_alertas
-from utils.clean_function import ejecutar_pipeline_limpieza
-from src.carga_datos import crear_base_de_datos_si_not_exists, cargar_datos_desde_env
+from src.network.funciones_criptos import ejecutar_pipeline_criptomonedas
+from src.network.funciones_stable_coins import obtener_historico_defillama, calcular_metricas_anomalidad
+from src.utils.analisis_alertas import ejecutar_pipeline_alertas
+from src.utils.clean_function import ejecutar_pipeline_limpieza
+from src.database.carga_datos import crear_base_de_datos_si_not_exists, cargar_datos_desde_env
 
 # --- BLOQUE PRINCIPAL DE EJECUCIÓN ---
 if __name__ == "__main__":
