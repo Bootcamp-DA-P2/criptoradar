@@ -108,7 +108,6 @@ st.header("🏗 Arquitectura del Proyecto")
 
 st.code("""
              🌐 APIs
-
    Bitget              DefiLlama
        │                   │
        └─────────┬─────────┘
@@ -120,9 +119,8 @@ st.code("""
               Python ETL
                  ▼
                MySQL
-          ┌──────────────┐
-          ▼              ▼
-     Power BI      Streamlit
+                 ▼
+             Streamlit
 """)
 
 st.divider()
@@ -157,8 +155,6 @@ with col2:
 • SQL
 
 • MySQL
-
-• BigQuery
 """)
 
 with col3:
@@ -169,8 +165,6 @@ with col3:
 • Git
 
 • GitHub
-
-• Power BI
 
 • APIs REST
 """)
@@ -189,7 +183,6 @@ st.markdown("""
 - ✅ Pipeline ETL desarrollado en Python.
 - ✅ Limpieza y transformación de datos.
 - ✅ Base de datos relacional en MySQL.
-- ✅ Dashboard interactivo en Power BI.
 - ✅ Aplicación web desarrollada con Streamlit.
 - ✅ Sistema automático de alertas.
 - ✅ Consultas SQL para análisis.
@@ -213,8 +206,6 @@ st.success("""
 
 ✔ Dashboard profesional en Streamlit.
 
-✔ Dashboard ejecutivo en Power BI.
-
 ✔ Proyecto preparado para despliegue en la nube.
 """)
 
@@ -237,7 +228,6 @@ Durante el desarrollo de CriptoRadar se aplicaron conocimientos relacionados con
 - Consultas SQL.
 - Visualización interactiva con Plotly.
 - Desarrollo de aplicaciones con Streamlit.
-- Creación de dashboards en Power BI.
 - Control de versiones con Git y GitHub.
 """)
 
@@ -250,31 +240,31 @@ st.divider()
 st.header("👩‍💻 Autores")
 
 st.write("""
-**Rita, Ana, Maria y Miguel**
+**Rita Romero, Ana Ganfornina, Maria Bejarano y Miguel Angel Moreno**
 
 Data Analyst Junior
 
 Proyecto desarrollado como portfolio para demostrar habilidades en
 extracción, procesamiento, análisis y visualización de datos utilizando
-Python, SQL, MySQL, Power BI y Streamlit.
+Python, SQL, MySQL y Streamlit.
 """)
 
-st.divider()
+# st.divider()
 
 # =====================================
 # CONTACTO
 # =====================================
 
-st.header("📬 Contacto")
+# st.header("📬 Contacto")
 
-st.info("""
-💼 LinkedIn: (Añadir enlace)
+# st.info("""
+# 💼 LinkedIn: (Añadir enlace)
 
-💻 GitHub: (Añadir enlace)
+# 💻 GitHub: (Añadir enlace)
 
-📧 Email: (Añadir correo profesional)
-""")
+# 📧 Email: (Añadir correo profesional)
+# """)
 
-st.divider()
+# st.divider()
 
-st.success("🚀 Gracias por visitar CriptoRadar. ¡Espero que disfrutes explorando el proyecto!")
+# st.success("🚀 Gracias por visitar CriptoRadar. ¡Espero que disfrutes explorando el proyecto!")
