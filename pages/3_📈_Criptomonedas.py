@@ -1,7 +1,7 @@
 import streamlit as st
 import plotly.express as px
 
-from src.cargar_streamlit import cargar_crypto
+from src.view.cargar_streamlit import cargar_crypto
 
 
 # ==================================

@@ -1,8 +1,8 @@
 import streamlit as st
 import plotly.express as px
 
-from src.componentes import cabecera
-from src.cargar_streamlit import cargar_crypto, cargar_stable
+from src.view.componentes import cabecera
+from src.view.cargar_streamlit import cargar_crypto, cargar_stable
 
 # =====================================================
 # CARGAR DATOS

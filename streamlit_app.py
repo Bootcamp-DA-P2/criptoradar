@@ -1,8 +1,8 @@
 import streamlit as st
 from PIL import Image
 
-from src.styles import cargar_css
-from src.cargar_streamlit import cargar_crypto, cargar_stable
+from src.view.styles import cargar_css
+from src.view.cargar_streamlit import cargar_crypto, cargar_stable
 
 # =====================================
 # CONFIGURACIÓN
