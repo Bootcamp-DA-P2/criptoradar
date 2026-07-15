@@ -133,7 +133,9 @@ st.divider()
 # ==================================
 # FILTROS
 # ==================================
+st.sidebar.header("⚙️ Filtros")
 
+# 1. Filtros de categorías existentes
 niveles = st.sidebar.multiselect(
     "Nivel de alerta",
     sorted(df["nivel_alerta"].unique()),
@@ -146,11 +148,36 @@ stable = st.sidebar.multiselect(
     default=sorted(df["stablecoin"].unique())
 )
 
+# 2. NUEVO: Slicer de Rango de Fechas
+min_fecha = df["datetime"].min().date()
+max_fecha = df["datetime"].max().date()
+
+# Al pasarle una tupla en 'value', Streamlit crea automáticamente un slider de dos extremos (rango)
+rango_fechas = st.sidebar.slider(
+    "📅 Rango de fechas",
+    min_value=min_fecha,
+    max_value=max_fecha,
+    value=(min_fecha, max_fecha), # Posición inicial de los selectores (todo el rango)
+    format="DD/MM/YYYY"
+)
+
+# Desempaquetamos las fechas elegidas por el usuario
+fecha_inicio, fecha_fin = rango_fechas
+
+# ==================================
+# FILTRAR DATOS
+# ==================================
+
+# Aplicamos los filtros de nivel, stablecoin y el nuevo rango de fechas del slicer
 datos = df[
     (df["nivel_alerta"].isin(niveles))
     &
     (df["stablecoin"].isin(stable))
-]
+    &
+    (df["datetime"].dt.date >= fecha_inicio)
+    &
+    (df["datetime"].dt.date <= fecha_fin)
+].copy()
 
 # ==================================
 # EVOLUCIÓN DE ALERTAS
@@ -243,6 +270,82 @@ st.dataframe(
     use_container_width=True
 )
 
+# ==================================
+# MATRIZ Y COMPARATIVA DE ALERTAS (NIVELES 1 Y 2)
+# ==================================
+
+
+
+st.subheader("🔍 Análisis detallado de anomalías críticas")
+
+# 1. Filtramos solo los niveles críticos (Vigilancia y Alerta)
+df_criticas_filtrado = datos[datos["nivel_alerta"].isin(["1_VIGILANCIA_STABLECOIN", "2_ALERTA_MERCADO"])]
+
+if df_criticas_filtrado.empty:
+    st.info("🟢 No hay alertas de nivel 'Vigilancia' o 'Alerta de Mercado' en el rango de filtros seleccionado.")
+else:
+    # 2. Creamos la tabla de contingencia (crosstab) de manera dinámica
+    ct = pd.crosstab(df_criticas_filtrado["stablecoin"], df_criticas_filtrado["nivel_alerta"])
+
+    # Aseguramos que ambas columnas existan para evitar errores si no hay datos de algún tipo
+    columnas_esperadas = ["1_VIGILANCIA_STABLECOIN", "2_ALERTA_MERCADO"]
+    ct_alertas = ct.reindex(columns=columnas_esperadas, fill_value=0)
+
+    # Creamos dos columnas en Streamlit para el diseño side-by-side
+    col_chart1, col_chart2 = st.columns(2)
+
+    with col_chart1:
+        # HEATMAP interactivo con Plotly
+        fig_heat = px.imshow(
+            ct_alertas,
+            text_auto=True,
+            color_continuous_scale="Reds",
+            aspect="auto",  # <- clave: sin esto, imshow fuerza celdas cuadradas y el
+                             #    gráfico se encoge dentro del contenedor (era el bug)
+            title="Nº de alertas por stablecoin (niveles 1 y 2)",
+            labels=dict(x="Nivel de Alerta", y="Stablecoin", color="Cantidad")
+        )
+
+        fig_heat.update_layout(
+            template="plotly_dark",
+            title_x=0.5,
+            height=450,
+            margin=dict(t=60, b=100, l=10, r=10),
+            coloraxis_showscale=False
+        )
+
+        fig_heat.update_xaxes(tickangle=25, tickfont=dict(size=11))
+        fig_heat.update_traces(textfont=dict(size=13))
+
+        st.plotly_chart(fig_heat, use_container_width=True)
+
+    with col_chart2:
+        # GRÁFICO DE BARRAS APILADAS interactivo con Plotly
+        fig_bar = px.bar(
+            ct_alertas,
+            x=ct_alertas.index,
+            y=["1_VIGILANCIA_STABLECOIN", "2_ALERTA_MERCADO"],
+            title="Alertas por stablecoin (barras apiladas)",
+            color_discrete_map={
+                "1_VIGILANCIA_STABLECOIN": "#FFA500",  # Naranja
+                "2_ALERTA_MERCADO": "#FF0000"          # Rojo
+            }
+        )
+
+        fig_bar.update_layout(
+            template="plotly_dark",
+            barmode="stack",
+            xaxis_title="",
+            yaxis_title="Cantidad de Alertas",
+            title_x=0.5,
+            legend_title="",
+            height=450,
+            margin=dict(t=60, b=100, l=10, r=10)
+        )
+
+        fig_bar.update_xaxes(tickangle=25, tickfont=dict(size=11))
+
+        st.plotly_chart(fig_bar, use_container_width=True)
 # ==================================
 # CARGAR INFORME DE ALERTAS CRÍTICAS
 # ==================================
