@@ -24,29 +24,49 @@ if not all([DB_USER, DB_PASS, DB_HOST, DB_NAME, CARPETA_DATOS, FICHERO_SQL]):
 
 
 def crear_base_de_datos_si_not_exists():
-    """Conecta al servidor MySQL base para ejecutar el script de estructura desde la carpeta de datos."""
-    ruta_sql = os.path.join(CARPETA_DATOS, FICHERO_SQL)
-    
-    if not os.path.exists(ruta_sql):
-        print(f"❌ Error: No se encuentra el archivo SQL en la ruta: {ruta_sql}")
-        sys.exit(1)
-        
-    print(f"🛠️  Comprobando e inicializando esquema desde: {ruta_sql}")
+    """Conecta al servidor MySQL base y comprueba si la base de datos ya existe.
+    - Si existe: Se salta todo y NO exige el archivo SQL.
+    - Si no existe: Busca el archivo SQL en la ruta configurada para levantarla desde cero.
+    """
     try:
         # Nos conectamos al host sin indicar Base de Datos inicial
         engine_servidor = create_engine(f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}/")
         
+        # 1. Comprobar si la base de datos ya existe en el servidor MySQL
+        with engine_servidor.connect() as conexion:
+            resultado = conexion.execute(text("SHOW DATABASES;"))
+            bases_de_datos = [fila[0] for fila in resultado]
+        
+        if DB_NAME in bases_de_datos:
+            print(f"ℹ️  La base de datos '{DB_NAME}' ya existe en el servidor.")
+            print(f"   👉 Se omite la validación y ejecución del fichero SQL ({FICHERO_SQL}).")
+            return  # <--- SALIDA EXITOSA INMEDIATA (No comprueba ni exige el archivo local)
+            
+    except Exception as e:
+        print(f"❌ Error al comprobar la existencia de la base de datos en el servidor: {e}")
+        sys.exit(1)
+
+    # 2. Si NO existe en el servidor, entonces SÍ es estrictamente necesario el archivo SQL
+    ruta_sql = os.path.join(CARPETA_DATOS, FICHERO_SQL)
+    
+    if not os.path.exists(ruta_sql):
+        print(f"❌ Error crítico: La base de datos '{DB_NAME}' no existe en el servidor ")
+        print(f"   y tampoco se encuentra el archivo SQL de inicialización en la ruta: {ruta_sql}")
+        sys.exit(1)
+        
+    print(f"🛠️  La base de datos no existe en el servidor. Inicializando esquema desde: {ruta_sql}")
+    try:
         with open(ruta_sql, "r", encoding="utf-8") as f:
             # Separamos los comandos por punto y coma descartando bloques vacíos
             sentencias_sql = [s.strip() for s in f.read().split(";") if s.strip()]
             
         with engine_servidor.connect() as conexion:
             for sentencia in sentencias_sql:
-                # Omitimos líneas de comentarios puros si el split las dejó sueltas
+                # Omitimos líneas de comentarios puros
                 if not sentencia.startswith("--"):
                     conexion.execute(text(sentencia))
                     
-        print("✅ Base de datos y tablas listas para usar.")
+        print("✅ Base de datos creada y tablas inicializadas con éxito.")
     except Exception as e:
         print(f"❌ Error crítico al crear la estructura de la base de datos: {e}")
         sys.exit(1)
