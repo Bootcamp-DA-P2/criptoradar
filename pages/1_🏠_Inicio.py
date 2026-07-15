@@ -117,7 +117,7 @@ st.divider()
 
 st.caption(
 """
-Desarrollado por:  **Rita, Maria, Ana y Miguel**
+Desarrollado por:  **Rita Romero, Maria Bejarano, Ana Ganfornina , Miguel Angel Moreno**
 
 Proyecto de Portfolio | Data Analytics Bootcamp | Python • SQL • Streamlit
 """
