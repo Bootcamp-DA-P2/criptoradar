@@ -1,30 +1,51 @@
 import streamlit as st
 import pandas as pd
-
-from src.cargar_streamlit import cargar_crypto, cargar_stable
+import os
+from dotenv import load_dotenv
 
 # ==================================
 # CONFIGURACIÓN
 # ==================================
-
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide", page_title="Consultas SQL", page_icon="🗄️")
 
 # ==================================
-# CARGAR DATOS
+# CONEXIÓN A LA BASE DE DATOS (.env)
+# ==================================
+load_dotenv()
+
+DB_USER = os.getenv("DB_USER")
+DB_PASS = os.getenv("DB_PASS")
+DB_HOST = os.getenv("DB_HOST")
+DB_NAME = os.getenv("DB_NAME")
+
+url_conexion = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
+conn = st.connection("sql", type="sql", url=url_conexion)
+
+# ==================================
+# CARGAR DATOS GENERALES (Con Caché)
 # ==================================
 
-df_crypto = cargar_crypto()
-df_stable = cargar_stable()
+@st.cache_data(ttl=300)
+def obtener_conteos():
+    # Consultas rápidas para los KPIs
+    conteo_crypto_precios = conn.query("SELECT COUNT(*) AS total FROM crypto_precios;").iloc[0]["total"]
+    conteo_stable_preprocesados = conn.query("SELECT COUNT(*) AS total FROM preprocesados_historico;").iloc[0]["total"]
+    total_cryptos = conn.query("SELECT COUNT(*) AS total FROM cryptos;").iloc[0]["total"]
+    total_stables = conn.query("SELECT COUNT(*) AS total FROM stablecoins;").iloc[0]["total"]
+    
+    return conteo_crypto_precios, conteo_stable_preprocesados, total_cryptos, total_stables
+
+# Cargar los contadores para los KPIs
+reg_crypto, reg_stable, cant_cryptos, cant_stables = obtener_conteos()
 
 # ==================================
 # TÍTULO
 # ==================================
-
 st.title("🗄️ Base de Datos y Consultas SQL")
 
 st.markdown("""
-Esta sección muestra ejemplos de consultas SQL que pueden realizarse sobre la base de datos
-relacional creada para el proyecto **CriptoRadar**.
+Esta sección muestra ejemplos de consultas SQL reales ejecutadas sobre la base de datos
+relacional del proyecto **CriptoRadar**, mapeando el resultado directamente a DataFrames.
 """)
 
 st.divider()
@@ -32,141 +53,98 @@ st.divider()
 # ==================================
 # KPIs
 # ==================================
-
 c1, c2, c3, c4 = st.columns(4)
 
-c1.metric(
-    "🪙 Registros Cripto",
-    len(df_crypto)
-)
-
-c2.metric(
-    "🛡 Registros Stablecoins",
-    len(df_stable)
-)
-
-c3.metric(
-    "📈 Criptomonedas",
-    df_crypto["crypto_id"].nunique()
-)
-
-c4.metric(
-    "💵 Stablecoins",
-    df_stable["stablecoin"].nunique()
-)
+c1.metric("🪙 Registros Cripto Histórico", reg_crypto)
+c2.metric("🛡 Registros Stablecoins Histórico", reg_stable)
+c3.metric("📈 Criptomonedas Activas", cant_cryptos)
+c4.metric("💵 Stablecoins Activas", cant_stables)
 
 st.divider()
 
 # ==================================
-# CONSULTA 1
+# CONSULTA 1: Precio promedio de criptos
 # ==================================
+st.subheader("Consulta 1: Precio promedio histórico de Criptomonedas")
 
-st.subheader("Consulta 1")
-
-st.code("""
-SELECT
-    crypto_id,
-    AVG(close) AS precio_promedio
-FROM cryptos
+query1 = """
+SELECT 
+    crypto_id, 
+    AVG(close) AS precio_promedio 
+FROM crypto_precios 
 GROUP BY crypto_id;
-""", language="sql")
+"""
 
-consulta1 = (
-    df_crypto
-    .groupby("crypto_id")["close"]
-    .mean()
-    .reset_index()
-)
+st.code(query1, language="sql")
 
-st.dataframe(
-    consulta1,
-    use_container_width=True
-)
+# Ejecutar consulta en caliente
+consulta1 = conn.query(query1)
+st.dataframe(consulta1, use_container_width=True)
+
 
 # ==================================
-# CONSULTA 2
+# CONSULTA 2: Desviación media de stablecoins
 # ==================================
+st.subheader("Consulta 2: Desviación media del Peg por Stablecoin")
 
-st.subheader("Consulta 2")
+query2 = """
+SELECT 
+    s.nombre_stablecoin AS stablecoin, 
+    AVG(p.peg_deviation) AS desviacion_media 
+FROM preprocesados_historico p
+INNER JOIN stablecoins s ON p.stablecoin_id = s.stablecoin_id
+GROUP BY s.nombre_stablecoin;
+"""
 
-st.code("""
-SELECT
-    stablecoin,
-    AVG(peg_deviation) AS desviacion_media
-FROM stablecoins
-GROUP BY stablecoin;
-""", language="sql")
+st.code(query2, language="sql")
 
-consulta2 = (
-    df_stable
-    .groupby("stablecoin")["peg_deviation"]
-    .mean()
-    .reset_index()
-)
+consulta2 = conn.query(query2)
+st.dataframe(consulta2, use_container_width=True)
 
-st.dataframe(
-    consulta2,
-    use_container_width=True
-)
 
 # ==================================
-# CONSULTA 3
+# CONSULTA 3: Máximos históricos de criptos
 # ==================================
+st.subheader("Consulta 3: Máximo valor histórico (High) registrado")
 
-st.subheader("Consulta 3")
-
-st.code("""
-SELECT
-    crypto_id,
-    MAX(high) AS maximo_historico
-FROM cryptos
+query3 = """
+SELECT 
+    crypto_id, 
+    MAX(high) AS maximo_historico 
+FROM crypto_precios 
 GROUP BY crypto_id;
-""", language="sql")
+"""
 
-consulta3 = (
-    df_crypto
-    .groupby("crypto_id")["high"]
-    .max()
-    .reset_index()
-)
+st.code(query3, language="sql")
 
-st.dataframe(
-    consulta3,
-    use_container_width=True
-)
+consulta3 = conn.query(query3)
+st.dataframe(consulta3, use_container_width=True)
+
 
 # ==================================
-# CONSULTA 4
+# CONSULTA 4: Market Cap máximo de stablecoins
 # ==================================
+st.subheader("Consulta 4: Capitalización de mercado máxima alcanzada")
 
-st.subheader("Consulta 4")
+query4 = """
+SELECT 
+    s.nombre_stablecoin AS stablecoin, 
+    MAX(p.market_cap) AS market_cap_maximo 
+FROM preprocesados_historico p
+INNER JOIN stablecoins s ON p.stablecoin_id = s.stablecoin_id
+GROUP BY s.nombre_stablecoin;
+"""
 
-st.code("""
-SELECT
-    stablecoin,
-    MAX(market_cap) AS market_cap_maximo
-FROM stablecoins
-GROUP BY stablecoin;
-""", language="sql")
+st.code(query4, language="sql")
 
-consulta4 = (
-    df_stable
-    .groupby("stablecoin")["market_cap"]
-    .max()
-    .reset_index()
-)
-
-st.dataframe(
-    consulta4,
-    use_container_width=True
-)
+consulta4 = conn.query(query4)
+st.dataframe(consulta4, use_container_width=True)
 
 st.divider()
 
 # ==================================
 # MODELO RELACIONAL
 # ==================================
-
 st.subheader("📚 Modelo de Base de Datos")
 
 st.info("""
