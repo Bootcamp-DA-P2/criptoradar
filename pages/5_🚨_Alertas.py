@@ -284,12 +284,20 @@ df_criticas_filtrado = datos[datos["nivel_alerta"].isin(["1_VIGILANCIA_STABLECOI
 if df_criticas_filtrado.empty:
     st.info("🟢 No hay alertas de nivel 'Vigilancia' o 'Alerta de Mercado' en el rango de filtros seleccionado.")
 else:
-    # 2. Creamos la tabla de contingencia (crosstab) de manera dinámica
-    ct = pd.crosstab(df_criticas_filtrado["stablecoin"], df_criticas_filtrado["nivel_alerta"])
-
-    # Aseguramos que ambas columnas existan para evitar errores si no hay datos de algún tipo
+    
     columnas_esperadas = ["1_VIGILANCIA_STABLECOIN", "2_ALERTA_MERCADO"]
-    ct_alertas = ct.reindex(columns=columnas_esperadas, fill_value=0)
+    
+    ct = pd.crosstab(df_criticas_filtrado["stablecoin"], df_criticas_filtrado["nivel_alerta"])
+    
+    # Lista completa de stablecoins según el filtro activo (no solo las que tienen
+    # alertas 1/2), para que las que tengan 0 alertas también aparezcan en la tabla.
+    todas_las_stables = sorted(datos["stablecoin"].unique())
+    
+    ct_alertas = ct.reindex(
+        index=todas_las_stables,
+        columns=columnas_esperadas,
+        fill_value=0
+    )
 
     # Creamos dos columnas en Streamlit para el diseño side-by-side
     col_chart1, col_chart2 = st.columns(2)
