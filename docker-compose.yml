@@ -1,7 +1,37 @@
+version: "3.9"
+
 services:
+  mysql:
+    image: mysql:8.4
+
+    container_name: criptoradar_mysql
+
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: criptoradar_db
+      MYSQL_USER: criptoradar_user
+      MYSQL_PASSWORD: _L^r;WaZ1w+291H<
+
+    ports:
+      - "3307:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   streamlit:
     build: .
-    container_name: criptoradar
+
+    container_name: criptoradar_app
+
+    restart: unless-stopped
 
     ports:
       - "8501:8501"
@@ -9,4 +39,9 @@ services:
     env_file:
       - .env
 
-    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:

@@ -24,7 +24,7 @@ def obtener_conexion_db():
 def cargar_crypto():
     engine = obtener_conexion_db()
     # Hacemos la consulta a la tabla correspondiente
-    query = "SELECT * FROM crypto_Precios"
+    query = "SELECT * FROM crypto_precios"
     df = pd.read_sql(query, con=engine)
     
     # Aseguramos el tipo de dato datetime

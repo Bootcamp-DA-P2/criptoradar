@@ -133,9 +133,9 @@ def cargar_datos_desde_env():
     dim_stablecoins = df_prep[['stablecoin_id', 'stablecoin']].drop_duplicates()
     dim_stablecoins.columns = ['stablecoin_id', 'nombre_stablecoin']
     
-    dim_stablecoins = filtrar_duplicados(dim_stablecoins, 'Stablecoins', ['stablecoin_id'], engine)
+    dim_stablecoins = filtrar_duplicados(dim_stablecoins, 'stablecoins', ['stablecoin_id'], engine)
     if not dim_stablecoins.empty:
-        dim_stablecoins.to_sql('Stablecoins', con=engine, if_exists='append', index=False)
+        dim_stablecoins.to_sql('stablecoins', con=engine, if_exists='append', index=False)
         print(f"   ✅ Stablecoins: Se insertaron {len(dim_stablecoins)} nuevos registros.")
     else:
         print("   ℹ️ Stablecoins: Sin nuevos datos que añadir.")
@@ -144,9 +144,9 @@ def cargar_datos_desde_env():
     df_crypto = pd.read_csv(archivos["crypto"])
     dim_cryptos = pd.DataFrame(df_crypto['crypto_id'].unique(), columns=['crypto_id'])
     
-    dim_cryptos = filtrar_duplicados(dim_cryptos, 'Cryptos', ['crypto_id'], engine)
+    dim_cryptos = filtrar_duplicados(dim_cryptos, 'cryptos', ['crypto_id'], engine)
     if not dim_cryptos.empty:
-        dim_cryptos.to_sql('Cryptos', con=engine, if_exists='append', index=False)
+        dim_cryptos.to_sql('cryptos', con=engine, if_exists='append', index=False)
         print(f"   ✅ Cryptos: Se insertaron {len(dim_cryptos)} nuevos registros.\n")
     else:
         print("   ℹ️ Cryptos: Sin nuevos datos que añadir.\n")
@@ -160,10 +160,10 @@ def cargar_datos_desde_env():
     cols_prep = ['datetime', 'stablecoin_id', 'price', 'market_cap', 'peg_deviation', 
                 'supply_change_1d', 'supply_change_7d', 'price_volatility_3d']
     df_prep_hechos = df_prep[cols_prep].drop_duplicates(subset=['datetime', 'stablecoin_id'])
-    df_prep_hechos = filtrar_duplicados(df_prep_hechos, 'Preprocesados_Historico', ['datetime', 'stablecoin_id'], engine)
+    df_prep_hechos = filtrar_duplicados(df_prep_hechos, 'preprocesados_historico', ['datetime', 'stablecoin_id'], engine)
     
     if not df_prep_hechos.empty:
-        df_prep_hechos.to_sql('Preprocesados_Historico', con=engine, if_exists='append', index=False)
+        df_prep_hechos.to_sql('preprocesados_historico', con=engine, if_exists='append', index=False)
         print(f"   🔹 Preprocesados_Historico: {len(df_prep_hechos)} filas nuevas añadidas.")
     else:
         print("   ℹ️ Preprocesados_Historico: Al día. No hay datos nuevos.")
@@ -173,10 +173,10 @@ def cargar_datos_desde_env():
     cols_sys = ['datetime', 'stablecoin_id', 'anomaly_score', 'is_anomaly_stablecoin', 
                 'market_volatility', 'market_stress', 'nivel_alerta']
     df_sys_hechos = df_sys[cols_sys].drop_duplicates(subset=['datetime', 'stablecoin_id'])
-    df_sys_hechos = filtrar_duplicados(df_sys_hechos, 'Alertas_Sistema', ['datetime', 'stablecoin_id'], engine)
+    df_sys_hechos = filtrar_duplicados(df_sys_hechos, 'alertas_sistema', ['datetime', 'stablecoin_id'], engine)
     
     if not df_sys_hechos.empty:
-        df_sys_hechos.to_sql('Alertas_Sistema', con=engine, if_exists='append', index=False)
+        df_sys_hechos.to_sql('alertas_sistema', con=engine, if_exists='append', index=False)
         print(f"   🔹 Alertas_Sistema: {len(df_sys_hechos)} filas nuevas añadidas.")
     else:
         print("   ℹ️ Alertas_Sistema: Al día. No hay datos nuevos.")
@@ -186,10 +186,10 @@ def cargar_datos_desde_env():
     cols_crit = ['datetime', 'stablecoin_id', 'nivel_alerta', 'btc_return', 
                 'eth_return', 'xrp_return', 'sol_return', 'narrativa_alerta']
     df_crit_hechos = df_crit[cols_crit].drop_duplicates(subset=['datetime', 'stablecoin_id'])
-    df_crit_hechos = filtrar_duplicados(df_crit_hechos, 'Alertas_Criticas', ['datetime', 'stablecoin_id'], engine)
+    df_crit_hechos = filtrar_duplicados(df_crit_hechos, 'alertas_criticas', ['datetime', 'stablecoin_id'], engine)
     
     if not df_crit_hechos.empty:
-        df_crit_hechos.to_sql('Alertas_Criticas', con=engine, if_exists='append', index=False)
+        df_crit_hechos.to_sql('alertas_criticas', con=engine, if_exists='append', index=False)
         print(f"   🔹 Alertas_Criticas: {len(df_crit_hechos)} filas nuevas añadidas.")
     else:
         print("   ℹ️ Alertas_Criticas: Al día. No hay datos nuevos.")
@@ -197,10 +197,10 @@ def cargar_datos_desde_env():
     # Fact_Crypto_Precios
     cols_crypto = ['datetime', 'crypto_id', 'open', 'high', 'low', 'close', 'volume']
     df_crypto_hechos = df_crypto[cols_crypto].drop_duplicates(subset=['datetime', 'crypto_id'])
-    df_crypto_hechos = filtrar_duplicados(df_crypto_hechos, 'Crypto_Precios', ['datetime', 'crypto_id'], engine)
-    
+    df_crypto_hechos = filtrar_duplicados(df_crypto_hechos, 'crypto_precios', ['datetime', 'crypto_id'], engine)
+
     if not df_crypto_hechos.empty:
-        df_crypto_hechos.to_sql('Crypto_Precios', con=engine, if_exists='append', index=False)
+        df_crypto_hechos.to_sql('crypto_precios', con=engine, if_exists='append', index=False)
         print(f"   🔹 Crypto_Precios: {len(df_crypto_hechos)} filas nuevas añadidas.")
     else:
         print("   ℹ️ Crypto_Precios: Al día. No hay datos nuevos.")
