@@ -106,13 +106,62 @@ mediante el sistema inteligente de alertas desarrollado en CriptoRadar.
 st.divider()
 
 # ==================================
-# KPIs
+# FILTROS
+# ==================================
+# Este bloque ahora va ANTES de los KPIs (antes estaba después), para poder
+# filtrar "datos" primero y calcular los KPIs sobre ese dataframe filtrado.
+
+st.sidebar.header("⚙️ Filtros")
+
+niveles = st.sidebar.multiselect(
+    "Nivel de alerta",
+    sorted(df["nivel_alerta"].unique()),
+    default=sorted(df["nivel_alerta"].unique())
+)
+
+stable = st.sidebar.multiselect(
+    "Stablecoin",
+    sorted(df["stablecoin"].unique()),
+    default=sorted(df["stablecoin"].unique())
+)
+
+min_fecha = df["datetime"].min().date()
+max_fecha = df["datetime"].max().date()
+
+rango_fechas = st.sidebar.slider(
+    "📅 Rango de fechas",
+    min_value=min_fecha,
+    max_value=max_fecha,
+    value=(min_fecha, max_fecha),
+    format="DD/MM/YYYY"
+)
+
+fecha_inicio, fecha_fin = rango_fechas
+
+# ==================================
+# FILTRAR DATOS
 # ==================================
 
-normal = (df["nivel_alerta"] == "0_normal").sum()
-vigilancia = (df["nivel_alerta"] == "1_VIGILANCIA_STABLECOIN").sum()
-critica = (df["nivel_alerta"] == "2_ALERTA_MERCADO").sum()
-total = len(df)
+datos = df[
+    (df["nivel_alerta"].isin(niveles))
+    &
+    (df["stablecoin"].isin(stable))
+    &
+    (df["datetime"].dt.date >= fecha_inicio)
+    &
+    (df["datetime"].dt.date <= fecha_fin)
+].copy()
+
+# ==================================
+# KPIs
+# ==================================
+# Antes usaban "df" (sin filtrar) -> ahora usan "datos" (filtrado), para que
+# reaccionen a los filtros de fecha/moneda del sidebar.
+
+normal = (datos["nivel_alerta"] == "0_normal").sum()
+vigilancia = (datos["nivel_alerta"] == "1_VIGILANCIA_STABLECOIN").sum()
+critica = (datos["nivel_alerta"] == "2_ALERTA_MERCADO").sum()
+total = len(datos)
 
 c1, c2, c3, c4 = st.columns(4)
 
@@ -130,27 +179,7 @@ with c4:
 
 st.divider()
 
-# ==================================
-# FILTROS
-# ==================================
 
-niveles = st.sidebar.multiselect(
-    "Nivel de alerta",
-    sorted(df["nivel_alerta"].unique()),
-    default=sorted(df["nivel_alerta"].unique())
-)
-
-stable = st.sidebar.multiselect(
-    "Stablecoin",
-    sorted(df["stablecoin"].unique()),
-    default=sorted(df["stablecoin"].unique())
-)
-
-datos = df[
-    (df["nivel_alerta"].isin(niveles))
-    &
-    (df["stablecoin"].isin(stable))
-]
 
 # ==================================
 # EVOLUCIÓN DE ALERTAS
@@ -244,6 +273,82 @@ st.dataframe(
 )
 
 # ==================================
+# MATRIZ Y COMPARATIVA DE ALERTAS (NIVELES 1 Y 2)
+# ==================================
+
+
+
+st.subheader("🔍 Análisis detallado de anomalías críticas")
+
+# 1. Filtramos solo los niveles críticos (Vigilancia y Alerta)
+df_criticas_filtrado = datos[datos["nivel_alerta"].isin(["1_VIGILANCIA_STABLECOIN", "2_ALERTA_MERCADO"])]
+
+if df_criticas_filtrado.empty:
+    st.info("🟢 No hay alertas de nivel 'Vigilancia' o 'Alerta de Mercado' en el rango de filtros seleccionado.")
+else:
+    # 2. Creamos la tabla de contingencia (crosstab) de manera dinámica
+    ct = pd.crosstab(df_criticas_filtrado["stablecoin"], df_criticas_filtrado["nivel_alerta"])
+
+    # Aseguramos que ambas columnas existan para evitar errores si no hay datos de algún tipo
+    columnas_esperadas = ["1_VIGILANCIA_STABLECOIN", "2_ALERTA_MERCADO"]
+    ct_alertas = ct.reindex(columns=columnas_esperadas, fill_value=0)
+
+    # Creamos dos columnas en Streamlit para el diseño side-by-side
+    col_chart1, col_chart2 = st.columns(2)
+
+    with col_chart1:
+        # HEATMAP interactivo con Plotly
+        fig_heat = px.imshow(
+            ct_alertas,
+            text_auto=True,
+            color_continuous_scale="Reds",
+            aspect="auto",  # <- clave: sin esto, imshow fuerza celdas cuadradas y el
+                             #    gráfico se encoge dentro del contenedor (era el bug)
+            title="Nº de alertas por stablecoin (niveles 1 y 2)",
+            labels=dict(x="Nivel de Alerta", y="Stablecoin", color="Cantidad")
+        )
+
+        fig_heat.update_layout(
+            template="plotly_dark",
+            title_x=0.5,
+            height=450,
+            margin=dict(t=60, b=100, l=10, r=10),
+            coloraxis_showscale=False
+        )
+
+        fig_heat.update_xaxes(tickangle=25, tickfont=dict(size=11))
+        fig_heat.update_traces(textfont=dict(size=13))
+
+        st.plotly_chart(fig_heat, use_container_width=True)
+
+    with col_chart2:
+        # GRÁFICO DE BARRAS APILADAS interactivo con Plotly
+        fig_bar = px.bar(
+            ct_alertas,
+            x=ct_alertas.index,
+            y=["1_VIGILANCIA_STABLECOIN", "2_ALERTA_MERCADO"],
+            title="Alertas por stablecoin (barras apiladas)",
+            color_discrete_map={
+                "1_VIGILANCIA_STABLECOIN": "#FFA500",  # Naranja
+                "2_ALERTA_MERCADO": "#FF0000"          # Rojo
+            }
+        )
+
+        fig_bar.update_layout(
+            template="plotly_dark",
+            barmode="stack",
+            xaxis_title="",
+            yaxis_title="Cantidad de Alertas",
+            title_x=0.5,
+            legend_title="",
+            height=450,
+            margin=dict(t=60, b=100, l=10, r=10)
+        )
+
+        fig_bar.update_xaxes(tickangle=25, tickfont=dict(size=11))
+
+        st.plotly_chart(fig_bar, use_container_width=True)
+# ==================================
 # CARGAR INFORME DE ALERTAS CRÍTICAS
 # ==================================
 
@@ -254,56 +359,6 @@ if not df_criticas.empty:
 
 st.divider()
 
-# ==================================
-# ALERTAS CRÍTICAS
-# ==================================
-
-st.subheader("🚨 Alertas relevantes")
-
-if df_criticas.empty:
-    st.success("✅ No existen alertas críticas registradas.")
-else:
-    for _, fila in df_criticas.sort_values("datetime", ascending=False).iterrows():
-        if fila["nivel_alerta"] == "2_ALERTA_MERCADO":
-            st.error(f"""
-### 🔴 {fila['stablecoin']}
-
-**Fecha:** {fila['datetime'].strftime('%d/%m/%Y')}
-
-💵 Precio: **{fila['price']:.4f} USD**
-
-🎯 Desviación del Peg: **{fila['peg_deviation']:.4f}**
-
-📉 Volatilidad: **{fila['market_volatility']:.2f}**
-
-🤖 Anomaly Score: **{fila['anomaly_score']:.2f}**
-""")
-        elif fila["nivel_alerta"] == "1_VIGILANCIA_STABLECOIN":
-            st.warning(f"""
-### 🟡 {fila['stablecoin']}
-
-**Fecha:** {fila['datetime'].strftime('%d/%m/%Y')}
-
-💵 Precio: **{fila['price']:.4f} USD**
-
-🎯 Desviación del Peg: **{fila['peg_deviation']:.4f}**
-
-🤖 Anomaly Score: **{fila['anomaly_score']:.2f}**
-""")
-
-st.divider()
-
-# ==================================
-# NARRATIVAS
-# ==================================
-
-if not df_criticas.empty and "narrativa_alerta" in df_criticas.columns:
-    st.subheader("📝 Narrativa automática")
-    for _, fila in df_criticas.sort_values("datetime", ascending=False).iterrows():
-        with st.expander(f"{fila['datetime'].strftime('%d/%m/%Y')} - {fila['stablecoin']}"):
-            st.write(fila["narrativa_alerta"])
-
-st.divider()
 
 # ==================================
 # RANKING DE ANOMALÍAS
@@ -381,3 +436,52 @@ else:
 Todas las stablecoins analizadas presentan un comportamiento
 estable y no se detectan anomalías relevantes.
 """)
+
+# ==================================
+# ALERTAS CRÍTICAS
+# ==================================
+# Reemplaza tu bloque actual de "ALERTAS CRÍTICAS" por este. Ahora incluye el texto
+# de narrativa_alerta (tabla Alertas_Criticas) dentro de la propia tarjeta, en vez
+# de dejarlo solo en la sección separada de más abajo.
+
+st.subheader("🚨 Alertas relevantes")
+
+if df_criticas.empty:
+    st.success("✅ No existen alertas críticas registradas.")
+else:
+    for _, fila in df_criticas.sort_values("datetime", ascending=False).iterrows():
+
+        # Texto de la narrativa automática (si existe y no está vacío)
+        tiene_narrativa = (
+            "narrativa_alerta" in fila
+            and pd.notna(fila["narrativa_alerta"])
+            and str(fila["narrativa_alerta"]).strip() != ""
+        )
+        narrativa_md = (
+            f"\n\n📝 **Narrativa:** {fila['narrativa_alerta']}" if tiene_narrativa else ""
+        )
+
+        if fila["nivel_alerta"] == "2_ALERTA_MERCADO":
+            st.error(f"""
+### 🔴 {fila['stablecoin']}
+
+**Fecha:** {fila['datetime'].strftime('%d/%m/%Y')}
+
+💵 Precio: **{fila['price']:.4f} USD**
+
+🎯 Desviación del Peg: **{fila['peg_deviation']:.4f}**{narrativa_md}
+""")
+
+        elif fila["nivel_alerta"] == "1_VIGILANCIA_STABLECOIN":
+            st.warning(f"""
+### 🟡 {fila['stablecoin']}
+
+**Fecha:** {fila['datetime'].strftime('%d/%m/%Y')}
+
+💵 Precio: **{fila['price']:.4f} USD**
+
+🎯 Desviación del Peg: **{fila['peg_deviation']:.4f}**{narrativa_md}
+""")
+
+st.divider()
+
