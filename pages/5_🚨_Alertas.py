@@ -155,8 +155,7 @@ datos = df[
 # ==================================
 # KPIs
 # ==================================
-# Antes usaban "df" (sin filtrar) -> ahora usan "datos" (filtrado), para que
-# reaccionen a los filtros de fecha/moneda del sidebar.
+
 
 normal = (datos["nivel_alerta"] == "0_normal").sum()
 vigilancia = (datos["nivel_alerta"] == "1_VIGILANCIA_STABLECOIN").sum()
@@ -178,7 +177,6 @@ with c4:
     st.metric("🔴 Alertas", critica)
 
 st.divider()
-
 
 
 # ==================================
@@ -364,7 +362,7 @@ st.divider()
 # RANKING DE ANOMALÍAS
 # ==================================
 
-st.subheader("🏆 Stablecoins con mayor riesgo")
+st.subheader("🏆 Stablecoins con mayor estabilidad")
 
 ranking = (
     datos.groupby("stablecoin")["anomaly_score"]
@@ -390,8 +388,8 @@ st.plotly_chart(fig3, use_container_width=True)
 
 st.info("""
 El Anomaly Score resume el comportamiento anómalo detectado por el sistema.
-Cuanto mayor es este indicador, mayor es la probabilidad de que la stablecoin
-esté experimentando condiciones fuera de su comportamiento habitual.
+Cuanto menor es este indicador (más cercano a cero o negativo),
+mayor es la probabilidad de anomalías
 """)
 
 st.divider()
