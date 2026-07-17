@@ -24,24 +24,25 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Instalamos solo lo mínimo imprescindible para ejecutar la app (cliente mysql y dos2unix)
+# 1. Instalar dependencias del sistema (Sigue siendo ROOT)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     default-mysql-client \
     dos2unix \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar las dependencias ya compiladas desde la etapa builder
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+# 2. Copiar las dependencias a un directorio accesible para todos los usuarios
+COPY --from=builder /root/.local /home/appuser/.local
+ENV PATH=/home/appuser/.local/bin:$PATH
 
-# Copiar el proyecto
-RUN useradd -ms /bin/bash appuser
-
-USER appuser
-
-# Copiar y preparar el script de inicio
+# 3. Copiar y preparar el script de inicio (Sigue siendo ROOT para poder escribir en /)
 COPY entrypoint.sh /entrypoint.sh
 RUN dos2unix /entrypoint.sh && chmod +x /entrypoint.sh
+
+# 4. Crear el usuario, darle propiedad de sus dependencias y cambiar de usuario
+RUN useradd -ms /bin/bash appuser && \
+    chown -R appuser:appuser /home/appuser/.local
+
+USER appuser
 
 EXPOSE 8501
 
