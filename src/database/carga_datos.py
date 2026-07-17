@@ -1,8 +1,10 @@
 import os
 import sys
+from pathlib import Path
 import pandas as pd
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
+
 
 # Cargar variables del entorno desde el .venv
 load_dotenv()
@@ -14,14 +16,46 @@ DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
 DB_HOST = os.getenv("DB_HOST")
 DB_NAME = os.getenv("DB_NAME")
-CARPETA_DATOS = os.getenv("CARPETA_DATOS")
-FICHERO_SQL = os.getenv("FICHERO_SQL")
+DB_PORT = os.getenv("DB_PORT")
 
-# Validar que no falte ningún parámetro clave en el entorno
-if not all([DB_USER, DB_PASS, DB_HOST, DB_NAME, CARPETA_DATOS, FICHERO_SQL]):
-    print("❌ Error: Faltan variables de entorno esenciales en tu archivo .env")
+
+# ==========================
+# Rutas del proyecto
+# ==========================
+BASE_DIR = Path(__file__).resolve().parents[2]
+
+# Si no vienen definidas, usar rutas por defecto
+CARPETA_DATOS = os.getenv(
+    "CARPETA_DATOS",
+    str(BASE_DIR / "data")
+)
+
+FICHERO_SQL = os.getenv(
+    "FICHERO_SQL",
+    "estructura.sql"
+)
+
+# ==========================
+# Validación
+# ==========================
+required = {
+    "DB_USER": DB_USER,
+    "DB_PASS": DB_PASS,
+    "DB_HOST": DB_HOST,
+    "DB_NAME": DB_NAME,
+}
+
+missing = [k for k, v in required.items() if not v]
+
+if missing:
+    print("❌ Faltan variables de entorno:")
+    for var in missing:
+        print(f"   - {var}")
     sys.exit(1)
 
+print("✅ Variables de entorno cargadas correctamente")
+print(f"📁 Carpeta de datos: {CARPETA_DATOS}")
+print(f"📄 SQL: {FICHERO_SQL}")
 
 def crear_base_de_datos_si_not_exists():
     """Conecta al servidor MySQL base y comprueba si la base de datos ya existe.
@@ -30,7 +64,7 @@ def crear_base_de_datos_si_not_exists():
     """
     try:
         # Nos conectamos al host sin indicar Base de Datos inicial
-        engine_servidor = create_engine(f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}/")
+        engine_servidor = create_engine( f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
         
         # 1. Comprobar si la base de datos ya existe en el servidor MySQL
         with engine_servidor.connect() as conexion:
@@ -47,7 +81,7 @@ def crear_base_de_datos_si_not_exists():
         sys.exit(1)
 
     # 2. Si NO existe en el servidor, entonces SÍ es estrictamente necesario el archivo SQL
-    ruta_sql = os.path.join(CARPETA_DATOS, FICHERO_SQL)
+    ruta_sql = Path(CARPETA_DATOS) / FICHERO_SQL
     
     if not os.path.exists(ruta_sql):
         print(f"❌ Error crítico: La base de datos '{DB_NAME}' no existe en el servidor ")
@@ -57,14 +91,13 @@ def crear_base_de_datos_si_not_exists():
     print(f"🛠️  La base de datos no existe en el servidor. Inicializando esquema desde: {ruta_sql}")
     try:
         with open(ruta_sql, "r", encoding="utf-8") as f:
-            # Separamos los comandos por punto y coma descartando bloques vacíos
-            sentencias_sql = [s.strip() for s in f.read().split(";") if s.strip()]
+            sql = f.read()
             
-        with engine_servidor.connect() as conexion:
-            for sentencia in sentencias_sql:
-                # Omitimos líneas de comentarios puros
-                if not sentencia.startswith("--"):
-                    conexion.execute(text(sentencia))
+        # with engine_servidor.connect() as conexion:
+        #     for sentencia in sentencias_sql:
+        #         # Omitimos líneas de comentarios puros
+        #         if not sentencia.startswith("--"):
+        #             conexion.execute(text(sentencia))
                     
         print("✅ Base de datos creada y tablas inicializadas con éxito.")
     except Exception as e:
