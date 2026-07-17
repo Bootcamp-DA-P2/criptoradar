@@ -7,11 +7,12 @@ ENV PYTHONUNBUFFERED=1
 # Directorio de trabajo
 WORKDIR /app
 
-# Dependencias del sistema
+# Dependencias del sistema (Añadimos dos2unix aquí)
 RUN apt-get update && apt-get install -y \
     default-mysql-client \
     gcc \
     build-essential \
+    dos2unix \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiar requirements e instalar dependencias
@@ -26,8 +27,8 @@ COPY . .
 # Copiar el script de inicio
 COPY entrypoint.sh /entrypoint.sh
 
-# Dar permisos de ejecución
-RUN chmod +x /entrypoint.sh
+# Convertir saltos de línea a formato Linux y dar permisos de ejecución
+RUN dos2unix /entrypoint.sh && chmod +x /entrypoint.sh
 
 # Puerto de Streamlit
 EXPOSE 8501
