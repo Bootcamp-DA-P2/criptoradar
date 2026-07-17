@@ -35,7 +35,9 @@ COPY --from=builder /root/.local /root/.local
 ENV PATH=/root/.local/bin:$PATH
 
 # Copiar el proyecto
-COPY . .
+RUN useradd -ms /bin/bash appuser
+
+USER appuser
 
 # Copiar y preparar el script de inicio
 COPY entrypoint.sh /entrypoint.sh
