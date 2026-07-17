@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
+import os
 import plotly.express as px
+from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from pathlib import Path
 
 
 # ==================================
@@ -20,8 +24,45 @@ st.set_page_config(
 # Creamos la conexión. 
 # Si usas SQLite local, busca un archivo llamado "alertas.db" en tu proyecto.
 # Para PostgreSQL/MySQL, consulta la sección de notas abajo.
-conn = st.connection("sql", type="sql")
+# ==================================
+# CONEXIÓN A LA BASE DE DATOS (.env)
+# ==================================
 
+ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(ROOT / ".env")
+
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT", "3306")
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+
+# Acepta ambos nombres por compatibilidad
+DB_PASS = os.getenv("DB_PASS")
+
+required = {
+    "DB_HOST": DB_HOST,
+    "DB_PORT": DB_PORT,
+    "DB_NAME": DB_NAME,
+    "DB_USER": DB_USER,
+    "DB_PASSWORD": DB_PASS,
+}
+
+missing = [k for k, v in required.items() if not v]
+
+if missing:
+    st.error(f"Faltan variables en el .env: {', '.join(missing)}")
+    st.stop()
+
+DATABASE_URL = (
+    f"mysql+pymysql://{DB_USER}:{DB_PASS}"
+    f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
+
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+)
 # Función para cargar los datos con caché para optimizar el rendimiento
 @st.cache_data(ttl=300) # Expira la caché cada 5 minutos
 def cargar_datos_desde_db():
@@ -41,7 +82,8 @@ def cargar_datos_desde_db():
         LEFT JOIN preprocesados_historico p 
             ON a.stablecoin_id = p.stablecoin_id AND a.datetime = p.datetime;
     """
-    df_db = conn.query(query)
+    with engine.connect() as connection:
+        df_db = pd.read_sql(query, connection)
     
     # Forzar minúsculas en las columnas para asegurar coincidencia con el resto del script
     df_db.columns = df_db.columns.str.lower()
@@ -69,7 +111,8 @@ def cargar_criticas_desde_db():
             LEFT JOIN preprocesados_historico p 
                 ON ac.stablecoin_id = p.stablecoin_id AND ac.datetime = p.datetime;
         """
-        df_db = conn.query(query)
+        with engine.connect() as connection:
+            df_db = pd.read_sql(query, connection)
         
         df_db.columns = df_db.columns.str.lower()
         return df_db

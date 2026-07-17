@@ -223,3 +223,4 @@ data/
 #ficheros temporales mac
 .DS_Store
 
+*.zip
