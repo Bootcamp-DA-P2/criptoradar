@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+      - feat/docker #Eliminar si cambiamos a main
 
 jobs:
   docker:
