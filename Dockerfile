@@ -19,28 +19,33 @@ RUN pip install --upgrade pip && \
 # --- ETAPA 2: Imagen de ejecución ligera (Final) ---
 FROM python:3.12-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
 WORKDIR /app
 
-# 1. Instalar dependencias del sistema (Sigue siendo ROOT)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    default-mysql-client \
+# Dependencias del sistema necesarias en ejecución
+RUN apt-get update && apt-get install -y \
     dos2unix \
+    default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Copiar las dependencias a un directorio accesible para todos los usuarios
+# Crear usuario no privilegiado
+RUN useradd -ms /bin/bash appuser
+
+# Copiar dependencias instaladas desde la etapa builder
 COPY --from=builder /root/.local /home/appuser/.local
+
+# Añadir pip local al PATH
 ENV PATH=/home/appuser/.local/bin:$PATH
 
-# 3. Copiar y preparar el script de inicio (Sigue siendo ROOT para poder escribir en /)
-COPY entrypoint.sh /entrypoint.sh
-RUN dos2unix /entrypoint.sh && chmod +x /entrypoint.sh
+# Copiar TODO el proyecto
+COPY . /app
 
-# 4. Crear el usuario, darle propiedad de sus dependencias y cambiar de usuario
-RUN useradd -ms /bin/bash appuser && \
-    chown -R appuser:appuser /home/appuser/.local
+# Copiar el entrypoint
+COPY entrypoint.sh /entrypoint.sh
+
+# Preparar permisos
+RUN dos2unix /entrypoint.sh && \
+    chmod +x /entrypoint.sh && \
+    chown -R appuser:appuser /app /home/appuser/.local
 
 USER appuser
 
