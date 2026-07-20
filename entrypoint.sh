@@ -16,7 +16,9 @@ done
 echo "✅ MySQL disponible"
 
 echo "🚀 Inicializando la base de datos..."
-python app.py
+python src/database/carga_datos.py
+
+echo "✅ Base de datos inicializada"
 
 echo "🌐 Iniciando Streamlit..."
 exec streamlit run streamlit_app.py \

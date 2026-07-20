@@ -1,12 +1,11 @@
-version: "3.9"
-
 services:
   mysql:
     image: mysql:8.4
-
     container_name: criptoradar_mysql
-
     restart: unless-stopped
+
+    env_file:
+      - .env
 
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -21,27 +20,37 @@ services:
       - mysql_data:/var/lib/mysql
 
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h localhost -uroot -p$MYSQL_ROOT_PASSWORD --silent"
+        ]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
 
   streamlit:
     build: .
 
-    container_name: criptoradar_app
+    container_name: criptoradar_streamlit
 
     restart: unless-stopped
-
-    ports:
-      - "8501:8501"
-
-    env_file:
-      - .env
 
     depends_on:
       mysql:
         condition: service_healthy
+
+    env_file:
+      - .env
+
+    ports:
+      - "8501:8501"
+
+    volumes:
+      - .:/app
+
+    command: ["/app/entrypoint.sh"]
 
 volumes:
   mysql_data:
