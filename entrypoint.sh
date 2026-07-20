@@ -11,7 +11,8 @@ until mysqladmin ping \
     -h"$DB_HOST" \
     -P"${DB_PORT:-3306}" \
     -u"$DB_USER" \
-    -p"$DB_PASS"
+    -p"$DB_PASS" \
+    --skip-ssl
 do
     intentos=$((intentos+1))
     echo "MySQL aún no está listo (intento $intentos), esperando..."
