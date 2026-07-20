@@ -16,6 +16,7 @@ DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
 DB_HOST = os.getenv("DB_HOST")
 DB_NAME = os.getenv("DB_NAME")
+DB_PORT = os.getenv("DB_PORT")
 
 
 # ==========================
@@ -92,11 +93,11 @@ def crear_base_de_datos_si_not_exists():
         with open(ruta_sql, "r", encoding="utf-8") as f:
             sql = f.read()
             
-        with engine_servidor.connect() as conexion:
-            for sentencia in sentencias_sql:
-                # Omitimos líneas de comentarios puros
-                if not sentencia.startswith("--"):
-                    conexion.execute(text(sentencia))
+        # with engine_servidor.connect() as conexion:
+        #     for sentencia in sentencias_sql:
+        #         # Omitimos líneas de comentarios puros
+        #         if not sentencia.startswith("--"):
+        #             conexion.execute(text(sentencia))
                     
         print("✅ Base de datos creada y tablas inicializadas con éxito.")
     except Exception as e:
@@ -106,7 +107,7 @@ def crear_base_de_datos_si_not_exists():
 
 def conectar_db():
     try:
-        connection_string = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
+        connection_string = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
         engine = create_engine(connection_string)
         return engine
     except Exception as e:

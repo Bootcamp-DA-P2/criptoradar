@@ -5,6 +5,7 @@ echo "⏳ Esperando a que MySQL esté disponible..."
 
 until mysqladmin ping \
     -h"$DB_HOST" \
+    -P"${DB_PORT:-3306}" \
     -u"$DB_USER" \
     -p"$DB_PASS" \
     --silent
