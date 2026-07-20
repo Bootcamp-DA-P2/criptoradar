@@ -1,22 +1,24 @@
 #!/bin/sh
+set -e
 
-echo "=== Directorio ==="
-env
+echo "⏳ Esperando a que MySQL esté disponible..."
 
-echo "=== Directorio ==="
-pwd
+until mysqladmin ping \
+    -h"$DB_HOST" \
+    -u"$DB_USER" \
+    -p"$DB_PASS" \
+    --silent
+do
+    echo "MySQL aún no está listo, esperando..."
+    sleep 2
+done
 
-echo "=== Archivos ==="
-find /app -maxdepth 3
+echo "✅ MySQL disponible"
 
-echo "=== Ejecutando carga_datos ==="
+echo "🚀 Inicializando la base de datos..."
+python app.py
 
-python src/database/carga_datos.py
-
-echo "Código de salida: $?"
-
-echo "=== Arrancando Streamlit ==="
-
+echo "🌐 Iniciando Streamlit..."
 exec streamlit run streamlit_app.py \
     --server.address=0.0.0.0 \
     --server.port=8501
