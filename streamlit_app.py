@@ -164,10 +164,6 @@ st.info("""
 
 ⬇
 
-📊 Power BI
-
-⬇
-
 🌐 Streamlit
 """)
 

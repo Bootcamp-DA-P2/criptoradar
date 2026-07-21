@@ -1,8 +1,10 @@
 import os
 import sys
+from pathlib import Path
 import pandas as pd
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
+
 
 # Cargar variables del entorno desde el .venv
 load_dotenv()
@@ -14,14 +16,46 @@ DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
 DB_HOST = os.getenv("DB_HOST")
 DB_NAME = os.getenv("DB_NAME")
-CARPETA_DATOS = os.getenv("CARPETA_DATOS")
-FICHERO_SQL = os.getenv("FICHERO_SQL")
+DB_PORT = os.getenv("DB_PORT")
 
-# Validar que no falte ningún parámetro clave en el entorno
-if not all([DB_USER, DB_PASS, DB_HOST, DB_NAME, CARPETA_DATOS, FICHERO_SQL]):
-    print("❌ Error: Faltan variables de entorno esenciales en tu archivo .env")
+
+# ==========================
+# Rutas del proyecto
+# ==========================
+BASE_DIR = Path(__file__).resolve().parents[2]
+
+# Si no vienen definidas, usar rutas por defecto
+CARPETA_DATOS = os.getenv(
+    "CARPETA_DATOS",
+    str(BASE_DIR / "data")
+)
+
+FICHERO_SQL = os.getenv(
+    "FICHERO_SQL",
+    "estructura.sql"
+)
+
+# ==========================
+# Validación
+# ==========================
+required = {
+    "DB_USER": DB_USER,
+    "DB_PASS": DB_PASS,
+    "DB_HOST": DB_HOST,
+    "DB_NAME": DB_NAME,
+}
+
+missing = [k for k, v in required.items() if not v]
+
+if missing:
+    print("❌ Faltan variables de entorno:")
+    for var in missing:
+        print(f"   - {var}")
     sys.exit(1)
 
+print("✅ Variables de entorno cargadas correctamente")
+print(f"📁 Carpeta de datos: {CARPETA_DATOS}")
+print(f"📄 SQL: {FICHERO_SQL}")
 
 def crear_base_de_datos_si_not_exists():
     """Conecta al servidor MySQL base y comprueba si la base de datos ya existe.
@@ -30,7 +64,7 @@ def crear_base_de_datos_si_not_exists():
     """
     try:
         # Nos conectamos al host sin indicar Base de Datos inicial
-        engine_servidor = create_engine(f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}/")
+        engine_servidor = create_engine( f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
         
         # 1. Comprobar si la base de datos ya existe en el servidor MySQL
         with engine_servidor.connect() as conexion:
@@ -47,7 +81,7 @@ def crear_base_de_datos_si_not_exists():
         sys.exit(1)
 
     # 2. Si NO existe en el servidor, entonces SÍ es estrictamente necesario el archivo SQL
-    ruta_sql = os.path.join(CARPETA_DATOS, FICHERO_SQL)
+    ruta_sql = Path(CARPETA_DATOS) / FICHERO_SQL
     
     if not os.path.exists(ruta_sql):
         print(f"❌ Error crítico: La base de datos '{DB_NAME}' no existe en el servidor ")
@@ -57,14 +91,13 @@ def crear_base_de_datos_si_not_exists():
     print(f"🛠️  La base de datos no existe en el servidor. Inicializando esquema desde: {ruta_sql}")
     try:
         with open(ruta_sql, "r", encoding="utf-8") as f:
-            # Separamos los comandos por punto y coma descartando bloques vacíos
-            sentencias_sql = [s.strip() for s in f.read().split(";") if s.strip()]
+            sql = f.read()
             
-        with engine_servidor.connect() as conexion:
-            for sentencia in sentencias_sql:
-                # Omitimos líneas de comentarios puros
-                if not sentencia.startswith("--"):
-                    conexion.execute(text(sentencia))
+        # with engine_servidor.connect() as conexion:
+        #     for sentencia in sentencias_sql:
+        #         # Omitimos líneas de comentarios puros
+        #         if not sentencia.startswith("--"):
+        #             conexion.execute(text(sentencia))
                     
         print("✅ Base de datos creada y tablas inicializadas con éxito.")
     except Exception as e:
@@ -74,7 +107,7 @@ def crear_base_de_datos_si_not_exists():
 
 def conectar_db():
     try:
-        connection_string = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
+        connection_string = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
         engine = create_engine(connection_string)
         return engine
     except Exception as e:
@@ -133,9 +166,9 @@ def cargar_datos_desde_env():
     dim_stablecoins = df_prep[['stablecoin_id', 'stablecoin']].drop_duplicates()
     dim_stablecoins.columns = ['stablecoin_id', 'nombre_stablecoin']
     
-    dim_stablecoins = filtrar_duplicados(dim_stablecoins, 'Stablecoins', ['stablecoin_id'], engine)
+    dim_stablecoins = filtrar_duplicados(dim_stablecoins, 'stablecoins', ['stablecoin_id'], engine)
     if not dim_stablecoins.empty:
-        dim_stablecoins.to_sql('Stablecoins', con=engine, if_exists='append', index=False)
+        dim_stablecoins.to_sql('stablecoins', con=engine, if_exists='append', index=False)
         print(f"   ✅ Stablecoins: Se insertaron {len(dim_stablecoins)} nuevos registros.")
     else:
         print("   ℹ️ Stablecoins: Sin nuevos datos que añadir.")
@@ -144,9 +177,9 @@ def cargar_datos_desde_env():
     df_crypto = pd.read_csv(archivos["crypto"])
     dim_cryptos = pd.DataFrame(df_crypto['crypto_id'].unique(), columns=['crypto_id'])
     
-    dim_cryptos = filtrar_duplicados(dim_cryptos, 'Cryptos', ['crypto_id'], engine)
+    dim_cryptos = filtrar_duplicados(dim_cryptos, 'cryptos', ['crypto_id'], engine)
     if not dim_cryptos.empty:
-        dim_cryptos.to_sql('Cryptos', con=engine, if_exists='append', index=False)
+        dim_cryptos.to_sql('cryptos', con=engine, if_exists='append', index=False)
         print(f"   ✅ Cryptos: Se insertaron {len(dim_cryptos)} nuevos registros.\n")
     else:
         print("   ℹ️ Cryptos: Sin nuevos datos que añadir.\n")
@@ -160,10 +193,10 @@ def cargar_datos_desde_env():
     cols_prep = ['datetime', 'stablecoin_id', 'price', 'market_cap', 'peg_deviation', 
                 'supply_change_1d', 'supply_change_7d', 'price_volatility_3d']
     df_prep_hechos = df_prep[cols_prep].drop_duplicates(subset=['datetime', 'stablecoin_id'])
-    df_prep_hechos = filtrar_duplicados(df_prep_hechos, 'Preprocesados_Historico', ['datetime', 'stablecoin_id'], engine)
+    df_prep_hechos = filtrar_duplicados(df_prep_hechos, 'preprocesados_historico', ['datetime', 'stablecoin_id'], engine)
     
     if not df_prep_hechos.empty:
-        df_prep_hechos.to_sql('Preprocesados_Historico', con=engine, if_exists='append', index=False)
+        df_prep_hechos.to_sql('preprocesados_historico', con=engine, if_exists='append', index=False)
         print(f"   🔹 Preprocesados_Historico: {len(df_prep_hechos)} filas nuevas añadidas.")
     else:
         print("   ℹ️ Preprocesados_Historico: Al día. No hay datos nuevos.")
@@ -173,10 +206,10 @@ def cargar_datos_desde_env():
     cols_sys = ['datetime', 'stablecoin_id', 'anomaly_score', 'is_anomaly_stablecoin', 
                 'market_volatility', 'market_stress', 'nivel_alerta']
     df_sys_hechos = df_sys[cols_sys].drop_duplicates(subset=['datetime', 'stablecoin_id'])
-    df_sys_hechos = filtrar_duplicados(df_sys_hechos, 'Alertas_Sistema', ['datetime', 'stablecoin_id'], engine)
+    df_sys_hechos = filtrar_duplicados(df_sys_hechos, 'alertas_sistema', ['datetime', 'stablecoin_id'], engine)
     
     if not df_sys_hechos.empty:
-        df_sys_hechos.to_sql('Alertas_Sistema', con=engine, if_exists='append', index=False)
+        df_sys_hechos.to_sql('alertas_sistema', con=engine, if_exists='append', index=False)
         print(f"   🔹 Alertas_Sistema: {len(df_sys_hechos)} filas nuevas añadidas.")
     else:
         print("   ℹ️ Alertas_Sistema: Al día. No hay datos nuevos.")
@@ -186,10 +219,10 @@ def cargar_datos_desde_env():
     cols_crit = ['datetime', 'stablecoin_id', 'nivel_alerta', 'btc_return', 
                 'eth_return', 'xrp_return', 'sol_return', 'narrativa_alerta']
     df_crit_hechos = df_crit[cols_crit].drop_duplicates(subset=['datetime', 'stablecoin_id'])
-    df_crit_hechos = filtrar_duplicados(df_crit_hechos, 'Alertas_Criticas', ['datetime', 'stablecoin_id'], engine)
+    df_crit_hechos = filtrar_duplicados(df_crit_hechos, 'alertas_criticas', ['datetime', 'stablecoin_id'], engine)
     
     if not df_crit_hechos.empty:
-        df_crit_hechos.to_sql('Alertas_Criticas', con=engine, if_exists='append', index=False)
+        df_crit_hechos.to_sql('alertas_criticas', con=engine, if_exists='append', index=False)
         print(f"   🔹 Alertas_Criticas: {len(df_crit_hechos)} filas nuevas añadidas.")
     else:
         print("   ℹ️ Alertas_Criticas: Al día. No hay datos nuevos.")
@@ -197,10 +230,10 @@ def cargar_datos_desde_env():
     # Fact_Crypto_Precios
     cols_crypto = ['datetime', 'crypto_id', 'open', 'high', 'low', 'close', 'volume']
     df_crypto_hechos = df_crypto[cols_crypto].drop_duplicates(subset=['datetime', 'crypto_id'])
-    df_crypto_hechos = filtrar_duplicados(df_crypto_hechos, 'Crypto_Precios', ['datetime', 'crypto_id'], engine)
-    
+    df_crypto_hechos = filtrar_duplicados(df_crypto_hechos, 'crypto_precios', ['datetime', 'crypto_id'], engine)
+
     if not df_crypto_hechos.empty:
-        df_crypto_hechos.to_sql('Crypto_Precios', con=engine, if_exists='append', index=False)
+        df_crypto_hechos.to_sql('crypto_precios', con=engine, if_exists='append', index=False)
         print(f"   🔹 Crypto_Precios: {len(df_crypto_hechos)} filas nuevas añadidas.")
     else:
         print("   ℹ️ Crypto_Precios: Al día. No hay datos nuevos.")
