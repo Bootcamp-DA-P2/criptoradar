@@ -2,6 +2,7 @@ import streamlit as st
 from PIL import Image
 
 from src.view.cargar_streamlit import cargar_crypto, cargar_stable
+from src.view.icons import icon_heading, icon_box, metric_html,icon
 
 # =====================================
 # CONFIGURACIÓN
@@ -9,7 +10,6 @@ from src.view.cargar_streamlit import cargar_crypto, cargar_stable
 
 st.set_page_config(
     page_title="Acerca del Proyecto",
-    page_icon="📖",
     layout="wide"
 )
 
@@ -33,7 +33,7 @@ with col1:
 
 with col2:
 
-    st.title("📖 Acerca del Proyecto")
+    st.markdown(icon_heading("book-open", "Acerca del Proyecto", level=1), unsafe_allow_html=True)
 
     st.subheader("CriptoRadar")
 
@@ -47,37 +47,21 @@ st.divider()
 # RESUMEN DEL PROYECTO
 # =====================================
 
-st.header("📊 Resumen del Proyecto")
+st.markdown(icon_heading("bar-chart", "Resumen del Proyecto", level=2), unsafe_allow_html=True)
 
 c1, c2, c3, c4 = st.columns(4)
 
 with c1:
-
-    st.metric(
-        "🪙 Criptomonedas",
-        df_crypto["crypto_id"].nunique()
-    )
+    st.markdown(metric_html("coin", "Criptomonedas", str(df_crypto["crypto_id"].nunique())), unsafe_allow_html=True)
 
 with c2:
-
-    st.metric(
-        "🛡 Stablecoins",
-        df_stable["stablecoin"].nunique()
-    )
+    st.markdown(metric_html("shield", "Stablecoins", str(df_stable["stablecoin"].nunique())), unsafe_allow_html=True)
 
 with c3:
-
-    st.metric(
-        "📄 Registros Crypto",
-        f"{len(df_crypto):,}"
-    )
+    st.markdown(metric_html("document", "Registros Crypto", f"{len(df_crypto):,}"), unsafe_allow_html=True)
 
 with c4:
-
-    st.metric(
-        "📄 Registros Stable",
-        f"{len(df_stable):,}"
-    )
+    st.markdown(metric_html("document", "Registros Stable", f"{len(df_stable):,}"), unsafe_allow_html=True)
 
 st.divider()
 
@@ -85,7 +69,7 @@ st.divider()
 # OBJETIVO
 # =====================================
 
-st.header("🎯 Objetivo")
+st.markdown(icon_heading("target", "Objetivo", level=2), unsafe_allow_html=True)
 
 st.write("""
 CriptoRadar es una aplicación desarrollada para monitorizar el comportamiento
@@ -104,10 +88,10 @@ st.divider()
 # ARQUITECTURA
 # =====================================
 
-st.header("🏗 Arquitectura del Proyecto")
+st.markdown(icon_heading("link", "Arquitectura del Proyecto", level=2), unsafe_allow_html=True)
 
 st.code("""
-             🌐 APIs
+             APIs
    Bitget              DefiLlama
        │                   │
        └─────────┬─────────┘
@@ -129,45 +113,39 @@ st.divider()
 # TECNOLOGÍAS
 # =====================================
 
-st.header("🛠 Tecnologías Utilizadas")
+st.markdown(icon_heading("tool", "Tecnologías Utilizadas", level=2), unsafe_allow_html=True)
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
-
-    st.success("""
-🐍 Python
-
-• Pandas
-
-• NumPy
-
-• Plotly
-
-• Streamlit
-""")
+    st.markdown(
+        icon_box(
+            "laptop",
+            "**Python**\n\n• Pandas\n\n• NumPy\n\n• Plotly\n\n• Streamlit",
+            kind="success",
+        ),
+        unsafe_allow_html=True,
+    )
 
 with col2:
-
-    st.success("""
-🗄 Bases de Datos
-
-• SQL
-
-• MySQL
-""")
+    st.markdown(
+        icon_box(
+            "database",
+            "**Bases de Datos**\n\n• SQL\n\n• MySQL",
+            kind="success",
+        ),
+        unsafe_allow_html=True,
+    )
 
 with col3:
-
-    st.success("""
-☁ Herramientas
-
-• Git
-
-• GitHub
-
-• APIs REST
-""")
+    st.markdown(
+        icon_box(
+            "cloud",
+            "**Herramientas**\n\n• Git\n\n• GitHub\n\n• APIs REST",
+            kind="success",
+        ),
+        unsafe_allow_html=True,
+    )
 
 st.divider()
 
@@ -175,19 +153,26 @@ st.divider()
 # FUNCIONALIDADES
 # =====================================
 
-st.header("🚀 Funcionalidades")
+st.markdown(icon_heading("check-circle", "Funcionalidades", level=2), unsafe_allow_html=True)
 
-st.markdown("""
-- ✅ Extracción automática desde la API de Bitget.
-- ✅ Extracción automática desde la API de DefiLlama.
-- ✅ Pipeline ETL desarrollado en Python.
-- ✅ Limpieza y transformación de datos.
-- ✅ Base de datos relacional en MySQL.
-- ✅ Aplicación web desarrollada con Streamlit.
-- ✅ Sistema automático de alertas.
-- ✅ Consultas SQL para análisis.
-- ✅ Análisis Exploratorio de Datos (EDA).
-""")
+funcionalidades = [
+    "Extracción automática desde la API de Bitget.",
+    "Extracción automática desde la API de DefiLlama.",
+    "Pipeline ETL desarrollado en Python.",
+    "Limpieza y transformación de datos.",
+    "Base de datos relacional en MySQL.",
+    "Aplicación web desarrollada con Streamlit.",
+    "Sistema automático de alertas.",
+    "Consultas SQL para análisis.",
+    "Análisis Exploratorio de Datos (EDA).",
+]
+
+for f in funcionalidades:
+    st.markdown(
+        f'<div style="display:flex;align-items:center;gap:0.5em;margin:0.25em 0;">'
+        f'{icon("check", size=16, color="#2ecc71")}<span>{f}</span></div>',
+        unsafe_allow_html=True,
+    )
 
 st.divider()
 
@@ -195,19 +180,20 @@ st.divider()
 # RESULTADOS
 # =====================================
 
-st.header("🏆 Resultados del Proyecto")
+st.markdown(icon_heading("trophy", "Resultados del Proyecto", level=2), unsafe_allow_html=True)
 
-st.success("""
-✔ Integración de múltiples fuentes de datos.
-
-✔ Automatización del proceso ETL.
-
-✔ Almacenamiento en MySQL.
-
-✔ Dashboard profesional en Streamlit.
-
-✔ Proyecto preparado para despliegue en la nube.
-""")
+st.markdown(
+    icon_box(
+        "check",
+        "Integración de múltiples fuentes de datos.\n\n"
+        "Automatización del proceso ETL.\n\n"
+        "Almacenamiento en MySQL.\n\n"
+        "Dashboard profesional en Streamlit.\n\n"
+        "Proyecto preparado para despliegue en la nube.",
+        kind="success",
+    ),
+    unsafe_allow_html=True,
+)
 
 st.divider()
 
@@ -215,7 +201,7 @@ st.divider()
 # APRENDIZAJES
 # =====================================
 
-st.header("📚 Competencias Desarrolladas")
+st.markdown(icon_heading("book", "Competencias Desarrolladas", level=2), unsafe_allow_html=True)
 
 st.markdown("""
 Durante el desarrollo de CriptoRadar se aplicaron conocimientos relacionados con:
@@ -237,7 +223,7 @@ st.divider()
 # AUTORA
 # =====================================
 
-st.header("👩‍💻 Autores")
+st.markdown(icon_heading("user", "Autores", level=2), unsafe_allow_html=True)
 
 st.write("""
 **Rita Romero, Ana Ganfornina, Maria Bejarano y Miguel Angel Moreno**
@@ -255,16 +241,16 @@ Python, SQL, MySQL y Streamlit.
 # CONTACTO
 # =====================================
 
-# st.header("📬 Contacto")
+# st.header("Contacto")
 
 # st.info("""
-# 💼 LinkedIn: (Añadir enlace)
-
-# 💻 GitHub: (Añadir enlace)
-
-# 📧 Email: (Añadir correo profesional)
+# LinkedIn: (Añadir enlace)
+#
+# GitHub: (Añadir enlace)
+#
+# Email: (Añadir correo profesional)
 # """)
 
 # st.divider()
 
-# st.success("🚀 Gracias por visitar CriptoRadar. ¡Espero que disfrutes explorando el proyecto!")
+# st.success("Gracias por visitar CriptoRadar. ¡Espero que disfrutes explorando el proyecto!")

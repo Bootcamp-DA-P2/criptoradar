@@ -2,6 +2,7 @@ import streamlit as st
 import plotly.express as px
 
 from src.view.cargar_streamlit import cargar_crypto
+from src.view.icons import icon_heading, icon_box, metric_html
 
 
 # ==================================
@@ -22,7 +23,7 @@ df = df.sort_values("datetime")
 # TÍTULO
 # ==================================
 
-st.title("🪙 Análisis de Criptomonedas")
+st.markdown(icon_heading("coin", "Análisis de Criptomonedas", level=1), unsafe_allow_html=True)
 
 st.markdown("""
 Explora el comportamiento histórico de las criptomonedas analizadas mediante
@@ -74,26 +75,29 @@ st.divider()
 
 c1, c2, c3, c4 = st.columns(4)
 
-c1.metric(
-    "💰 Precio actual",
-    f"${precio_actual:,.2f}",
-    f"{delta:.2f}%"
-)
+with c1:
+    st.markdown(
+        metric_html("banknote", "Precio actual", f"${precio_actual:,.2f}", delta=f"{delta:.2f}%"),
+        unsafe_allow_html=True,
+    )
 
-c2.metric(
-    "📈 Máximo histórico",
-    f"${datos['high'].max():,.2f}"
-)
+with c2:
+    st.markdown(
+        metric_html("trending-up", "Máximo histórico", f"${datos['high'].max():,.2f}"),
+        unsafe_allow_html=True,
+    )
 
-c3.metric(
-    "📉 Mínimo histórico",
-    f"${datos['low'].min():,.2f}"
-)
+with c3:
+    st.markdown(
+        metric_html("trending-down", "Mínimo histórico", f"${datos['low'].min():,.2f}"),
+        unsafe_allow_html=True,
+    )
 
-c4.metric(
-    "📊 Volumen promedio",
-    f"{datos['volume'].mean():,.0f}"
-)
+with c4:
+    st.markdown(
+        metric_html("bar-chart", "Volumen promedio", f"{datos['volume'].mean():,.0f}"),
+        unsafe_allow_html=True,
+    )
 
 st.divider()
 
@@ -105,7 +109,7 @@ fig = px.line(
     datos,
     x="datetime",
     y=["close", "media_movil_30"],
-    title="📈 Evolución del precio"
+    title="Evolución del precio"
 )
 
 fig.update_traces(
@@ -133,15 +137,18 @@ st.plotly_chart(
     use_container_width=True
 )
 
-st.info(f"""
-### Interpretación
-
-Durante el periodo analizado, **{crypto.capitalize()}** presenta una evolución
-histórica que permite identificar tendencias alcistas y bajistas.
-
-La **media móvil de 30 días** suaviza las fluctuaciones diarias y facilita
-la identificación de la tendencia predominante.
-""")
+st.markdown(
+    icon_box(
+        "search",
+        f"**Interpretación**\n\n"
+        f"Durante el periodo analizado, **{crypto.capitalize()}** presenta una evolución "
+        "histórica que permite identificar tendencias alcistas y bajistas.\n\n"
+        "La **media móvil de 30 días** suaviza las fluctuaciones diarias y facilita "
+        "la identificación de la tendencia predominante.",
+        kind="info",
+    ),
+    unsafe_allow_html=True,
+)
 
 # ==================================
 # VOLUMEN
@@ -151,7 +158,7 @@ fig2 = px.area(
     datos,
     x="datetime",
     y="volume",
-    title="💵 Volumen diario"
+    title="Volumen diario"
 )
 
 fig2.update_layout(
@@ -174,15 +181,18 @@ st.plotly_chart(
     use_container_width=True
 )
 
-st.info("""
-### Interpretación
-
-Los picos de volumen representan un incremento importante en la actividad
-de compra y venta del activo.
-
-Generalmente coinciden con eventos relevantes del mercado o periodos
-de elevada volatilidad.
-""")
+st.markdown(
+    icon_box(
+        "search",
+        "**Interpretación**\n\n"
+        "Los picos de volumen representan un incremento importante en la actividad "
+        "de compra y venta del activo.\n\n"
+        "Generalmente coinciden con eventos relevantes del mercado o periodos "
+        "de elevada volatilidad.",
+        kind="info",
+    ),
+    unsafe_allow_html=True,
+)
 
 # ==================================
 # RETORNO
@@ -192,7 +202,7 @@ fig3 = px.line(
     datos,
     x="datetime",
     y="retorno",
-    title="📊 Variación porcentual diaria"
+    title="Variación porcentual diaria"
 )
 
 fig3.update_layout(
@@ -215,14 +225,17 @@ st.plotly_chart(
     use_container_width=True
 )
 
-st.info("""
-### Interpretación
-
-El retorno diario muestra la variación porcentual respecto al día anterior.
-
-Valores cercanos a cero indican estabilidad, mientras que variaciones
-grandes reflejan jornadas de alta volatilidad.
-""")
+st.markdown(
+    icon_box(
+        "search",
+        "**Interpretación**\n\n"
+        "El retorno diario muestra la variación porcentual respecto al día anterior.\n\n"
+        "Valores cercanos a cero indican estabilidad, mientras que variaciones "
+        "grandes reflejan jornadas de alta volatilidad.",
+        kind="info",
+    ),
+    unsafe_allow_html=True,
+)
 
 # ==================================
 # HISTOGRAMA
@@ -232,7 +245,7 @@ fig4 = px.histogram(
     datos,
     x="close",
     nbins=40,
-    title="📉 Distribución histórica del precio"
+    title="Distribución histórica del precio"
 )
 
 fig4.update_layout(
@@ -255,19 +268,23 @@ st.plotly_chart(
     use_container_width=True
 )
 
-st.info("""
-### Interpretación
-
-La distribución permite identificar los rangos de precio donde la
-criptomoneda ha permanecido con mayor frecuencia durante el periodo
-analizado.
-""")
+st.markdown(
+    icon_box(
+        "search",
+        "**Interpretación**\n\n"
+        "La distribución permite identificar los rangos de precio donde la "
+        "criptomoneda ha permanecido con mayor frecuencia durante el periodo "
+        "analizado.",
+        kind="info",
+    ),
+    unsafe_allow_html=True,
+)
 
 # ==================================
 # ESTADÍSTICAS
 # ==================================
 
-st.subheader("📋 Estadísticas descriptivas")
+st.markdown(icon_heading("document", "Estadísticas descriptivas", level=3), unsafe_allow_html=True)
 
 st.dataframe(
     datos[
@@ -282,7 +299,7 @@ st.dataframe(
 # DATOS
 # ==================================
 
-with st.expander("📄 Ver últimos registros"):
+with st.expander("Ver últimos registros"):
 
     st.dataframe(
         datos.tail(30),

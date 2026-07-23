@@ -1,11 +1,12 @@
 import streamlit as st
 import pandas as pd
-import os
 import plotly.express as px
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from pathlib import Path
+import os
 
+from src.view.icons import icon_heading, icon_md, icon_box, metric_html
 
 # ==================================
 # CONFIGURACIÓN
@@ -13,7 +14,6 @@ from pathlib import Path
 
 st.set_page_config(
     page_title="Centro de Alertas",
-    page_icon="🚨",
     layout="wide"
 )
 
@@ -63,8 +63,9 @@ engine = create_engine(
     pool_pre_ping=True,
     pool_recycle=3600,
 )
+
 # Función para cargar los datos con caché para optimizar el rendimiento
-@st.cache_data(ttl=300) # Expira la caché cada 5 minutos
+@st.cache_data(ttl=300)  # Expira la caché cada 5 minutos
 def cargar_datos_desde_db():
     # Hacemos un JOIN para juntar la alerta con el nombre de la stablecoin 
     # y traer el precio e histórico de desviación correspondiente a esa fecha
@@ -88,6 +89,7 @@ def cargar_datos_desde_db():
     # Forzar minúsculas en las columnas para asegurar coincidencia con el resto del script
     df_db.columns = df_db.columns.str.lower()
     return df_db
+
 
 @st.cache_data(ttl=300)
 def cargar_criticas_desde_db():
@@ -120,6 +122,7 @@ def cargar_criticas_desde_db():
         # Si la tabla da algún problema, devuelve un DataFrame vacío estructurado
         st.sidebar.error(f"Error cargando alertas críticas: {e}")
         return pd.DataFrame()
+
 # ==================================
 # PROCESAMIENTO DE DATOS
 # ==================================
@@ -134,12 +137,13 @@ df = df.sort_values("datetime")
 # TÍTULO
 # ==================================
 
-st.title("🚨 Centro de Alertas")
+st.markdown(icon_heading("alert", "Centro de Alertas", level=1), unsafe_allow_html=True)
 
 ultima_fecha = df["datetime"].max()
 
-st.caption(
-    f"🕒 Última actualización: {ultima_fecha.strftime('%d/%m/%Y')}"
+st.markdown(
+    icon_md("clock", f"Última actualización: {ultima_fecha.strftime('%d/%m/%Y')}", size=14),
+    unsafe_allow_html=True,
 )
 
 st.write("""
@@ -155,7 +159,7 @@ st.divider()
 # Este bloque ahora va ANTES de los KPIs (antes estaba después), para poder
 # filtrar "datos" primero y calcular los KPIs sobre ese dataframe filtrado.
 
-st.sidebar.header("⚙️ Filtros")
+st.sidebar.markdown(icon_heading("settings", "Filtros", level=3), unsafe_allow_html=True)
 
 niveles = st.sidebar.multiselect(
     "Nivel de alerta",
@@ -173,7 +177,7 @@ min_fecha = df["datetime"].min().date()
 max_fecha = df["datetime"].max().date()
 
 rango_fechas = st.sidebar.slider(
-    "📅 Rango de fechas",
+    "Rango de fechas",
     min_value=min_fecha,
     max_value=max_fecha,
     value=(min_fecha, max_fecha),
@@ -209,16 +213,16 @@ total = len(datos)
 c1, c2, c3, c4 = st.columns(4)
 
 with c1:
-    st.metric("📄 Registros", total)
+    st.markdown(metric_html("document", "Registros", str(total)), unsafe_allow_html=True)
 
 with c2:
-    st.metric("🟢 Normales", normal)
+    st.markdown(metric_html("dot-green", "Normales", str(normal)), unsafe_allow_html=True)
 
 with c3:
-    st.metric("🟡 Vigilancia", vigilancia)
+    st.markdown(metric_html("dot-yellow", "Vigilancia", str(vigilancia)), unsafe_allow_html=True)
 
 with c4:
-    st.metric("🔴 Alertas", critica)
+    st.markdown(metric_html("dot-red", "Alertas", str(critica)), unsafe_allow_html=True)
 
 st.divider()
 
@@ -227,7 +231,7 @@ st.divider()
 # EVOLUCIÓN DE ALERTAS
 # ==================================
 
-st.subheader("📈 Evolución temporal de las alertas")
+st.markdown(icon_heading("trending-up", "Evolución temporal de las alertas", level=3), unsafe_allow_html=True)
 
 evolucion = (
     datos
@@ -254,11 +258,16 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 
-st.info("""
-Este gráfico muestra cómo evoluciona el número de alertas detectadas
-por el sistema a lo largo del tiempo, permitiendo identificar periodos
-de mayor estrés en el mercado.
-""")
+st.markdown(
+    icon_box(
+        "search",
+        "Este gráfico muestra cómo evoluciona el número de alertas detectadas "
+        "por el sistema a lo largo del tiempo, permitiendo identificar periodos "
+        "de mayor estrés en el mercado.",
+        kind="info",
+    ),
+    unsafe_allow_html=True,
+)
 
 st.divider()
 
@@ -266,7 +275,7 @@ st.divider()
 # DISTRIBUCIÓN
 # ==================================
 
-st.subheader("📊 Distribución de niveles de alerta")
+st.markdown(icon_heading("bar-chart", "Distribución de niveles de alerta", level=3), unsafe_allow_html=True)
 
 conteo = (
     datos["nivel_alerta"]
@@ -297,7 +306,7 @@ st.divider()
 # TABLA
 # ==================================
 
-st.subheader("📋 Registro de Alertas")
+st.markdown(icon_heading("document", "Registro de Alertas", level=3), unsafe_allow_html=True)
 
 columnas = [
     "datetime",
@@ -320,23 +329,26 @@ st.dataframe(
 
 
 
-st.subheader("🔍 Análisis detallado de anomalías críticas")
+st.markdown(icon_heading("search", "Análisis detallado de anomalías críticas", level=3), unsafe_allow_html=True)
 
 # 1. Filtramos solo los niveles críticos (Vigilancia y Alerta)
 df_criticas_filtrado = datos[datos["nivel_alerta"].isin(["1_VIGILANCIA_STABLECOIN", "2_ALERTA_MERCADO"])]
 
 if df_criticas_filtrado.empty:
-    st.info("🟢 No hay alertas de nivel 'Vigilancia' o 'Alerta de Mercado' en el rango de filtros seleccionado.")
+    st.markdown(
+        icon_box("check-circle", "No hay alertas de nivel 'Vigilancia' o 'Alerta de Mercado' en el rango de filtros seleccionado.", kind="success"),
+        unsafe_allow_html=True,
+    )
 else:
-    
+
     columnas_esperadas = ["1_VIGILANCIA_STABLECOIN", "2_ALERTA_MERCADO"]
-    
+
     ct = pd.crosstab(df_criticas_filtrado["stablecoin"], df_criticas_filtrado["nivel_alerta"])
-    
+
     # Lista completa de stablecoins según el filtro activo (no solo las que tienen
     # alertas 1/2), para que las que tengan 0 alertas también aparezcan en la tabla.
     todas_las_stables = sorted(datos["stablecoin"].unique())
-    
+
     ct_alertas = ct.reindex(
         index=todas_las_stables,
         columns=columnas_esperadas,
@@ -414,7 +426,7 @@ st.divider()
 # RANKING DE ANOMALÍAS
 # ==================================
 
-st.subheader("🏆 Stablecoins con mayor estabilidad")
+st.markdown(icon_heading("trophy", "Stablecoins con mayor estabilidad", level=3), unsafe_allow_html=True)
 
 ranking = (
     datos.groupby("stablecoin")["anomaly_score"]
@@ -438,11 +450,16 @@ fig3.update_layout(
 
 st.plotly_chart(fig3, use_container_width=True)
 
-st.info("""
-El Anomaly Score resume el comportamiento anómalo detectado por el sistema.
-Cuanto menor es este indicador (más cercano a cero o negativo),
-mayor es la probabilidad de anomalías
-""")
+st.markdown(
+    icon_box(
+        "search",
+        "El Anomaly Score resume el comportamiento anómalo detectado por el sistema. "
+        "Cuanto menor es este indicador (más cercano a cero o negativo), "
+        "mayor es la probabilidad de anomalías",
+        kind="info",
+    ),
+    unsafe_allow_html=True,
+)
 
 st.divider()
 
@@ -453,7 +470,7 @@ st.divider()
 if not df_criticas.empty:
     csv = df_criticas.to_csv(index=False).encode("utf-8")
     st.download_button(
-        "📥 Descargar informe de alertas",
+        "Descargar informe de alertas",
         csv,
         file_name="alertas_criticas.csv",
         mime="text/csv"
@@ -465,27 +482,40 @@ st.divider()
 # CONCLUSIÓN AUTOMÁTICA
 # ==================================
 
-st.subheader("📌 Estado del sistema")
+st.markdown(icon_heading("pin", "Estado del sistema", level=3), unsafe_allow_html=True)
 
 if critica > 0:
-    st.error(f"""
-Se detectaron **{critica} alertas de mercado**.
-
-Se recomienda revisar inmediatamente las stablecoins afectadas,
-ya que presentan anomalías relevantes detectadas por el sistema.
-""")
+    st.markdown(
+        icon_box(
+            "alert",
+            f"Se detectaron **{critica} alertas de mercado**.\n\n"
+            "Se recomienda revisar inmediatamente las stablecoins afectadas, "
+            "ya que presentan anomalías relevantes detectadas por el sistema.",
+            kind="error",
+        ),
+        unsafe_allow_html=True,
+    )
 elif vigilancia > 0:
-    st.warning(f"""
-Actualmente existen **{vigilancia} registros en vigilancia**.
-
-Aunque no representan una situación crítica, conviene mantener
-un seguimiento de su evolución.
-""")
+    st.markdown(
+        icon_box(
+            "alert",
+            f"Actualmente existen **{vigilancia} registros en vigilancia**.\n\n"
+            "Aunque no representan una situación crítica, conviene mantener "
+            "un seguimiento de su evolución.",
+            kind="warning",
+        ),
+        unsafe_allow_html=True,
+    )
 else:
-    st.success("""
-Todas las stablecoins analizadas presentan un comportamiento
-estable y no se detectan anomalías relevantes.
-""")
+    st.markdown(
+        icon_box(
+            "check-circle",
+            "Todas las stablecoins analizadas presentan un comportamiento "
+            "estable y no se detectan anomalías relevantes.",
+            kind="success",
+        ),
+        unsafe_allow_html=True,
+    )
 
 # ==================================
 # ALERTAS CRÍTICAS
@@ -494,10 +524,13 @@ estable y no se detectan anomalías relevantes.
 # de narrativa_alerta (tabla Alertas_Criticas) dentro de la propia tarjeta, en vez
 # de dejarlo solo en la sección separada de más abajo.
 
-st.subheader("🚨 Alertas relevantes")
+st.markdown(icon_heading("alert", "Alertas relevantes", level=3), unsafe_allow_html=True)
 
 if df_criticas.empty:
-    st.success("✅ No existen alertas críticas registradas.")
+    st.markdown(
+        icon_box("check-circle", "No existen alertas críticas registradas.", kind="success"),
+        unsafe_allow_html=True,
+    )
 else:
     for _, fila in df_criticas.sort_values("datetime", ascending=False).iterrows():
 
@@ -508,30 +541,20 @@ else:
             and str(fila["narrativa_alerta"]).strip() != ""
         )
         narrativa_md = (
-            f"\n\n📝 **Narrativa:** {fila['narrativa_alerta']}" if tiene_narrativa else ""
+            f"\n\n**Narrativa:** {fila['narrativa_alerta']}" if tiene_narrativa else ""
+        )
+
+        cuerpo = (
+            f"### {fila['stablecoin']}\n\n"
+            f"**Fecha:** {fila['datetime'].strftime('%d/%m/%Y')}\n\n"
+            f"Precio: **{fila['price']:.4f} USD**\n\n"
+            f"Desviación del Peg: **{fila['peg_deviation']:.4f}**{narrativa_md}"
         )
 
         if fila["nivel_alerta"] == "2_ALERTA_MERCADO":
-            st.error(f"""
-### 🔴 {fila['stablecoin']}
-
-**Fecha:** {fila['datetime'].strftime('%d/%m/%Y')}
-
-💵 Precio: **{fila['price']:.4f} USD**
-
-🎯 Desviación del Peg: **{fila['peg_deviation']:.4f}**{narrativa_md}
-""")
+            st.markdown(icon_box("dot-red", cuerpo, kind="error"), unsafe_allow_html=True)
 
         elif fila["nivel_alerta"] == "1_VIGILANCIA_STABLECOIN":
-            st.warning(f"""
-### 🟡 {fila['stablecoin']}
-
-**Fecha:** {fila['datetime'].strftime('%d/%m/%Y')}
-
-💵 Precio: **{fila['price']:.4f} USD**
-
-🎯 Desviación del Peg: **{fila['peg_deviation']:.4f}**{narrativa_md}
-""")
+            st.markdown(icon_box("dot-yellow", cuerpo, kind="warning"), unsafe_allow_html=True)
 
 st.divider()
-

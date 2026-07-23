@@ -1,6 +1,8 @@
 import streamlit as st
 
-st.title("📈 CriptoRadar")
+from src.view.icons import icon_heading, icon_md, icon_box
+
+st.markdown(icon_heading("trending-up", "CriptoRadar", level=1), unsafe_allow_html=True)
 
 st.subheader("Plataforma de análisis del mercado de criptomonedas y stablecoins")
 
@@ -19,62 +21,74 @@ col1, col2 = st.columns(2)
 
 with col1:
 
-    st.info("""
-### 📊 Dashboard Ejecutivo
-
-Consulta indicadores generales del mercado:
-
-- KPIs principales
-- Evolución del precio
-- Volumen
-- Tendencias
-""")
+    st.markdown(
+        icon_box(
+            "bar-chart",
+            "**Dashboard Ejecutivo**\n\n"
+            "Consulta indicadores generales del mercado:\n\n"
+            "- KPIs principales\n"
+            "- Evolución del precio\n"
+            "- Volumen\n"
+            "- Tendencias",
+            kind="info",
+        ),
+        unsafe_allow_html=True,
+    )
 
 with col2:
 
-    st.success("""
-### 🪙 Criptomonedas
+    st.markdown(
+        icon_box(
+            "coin",
+            "**Criptomonedas**\n\n"
+            "Analiza:\n\n"
+            "- Bitcoin\n"
+            "- Ethereum\n"
+            "- Ripple\n"
+            "- Solana",
+            kind="success",
+        ),
+        unsafe_allow_html=True,
+    )
 
-Analiza:
-
-- Bitcoin
-- Ethereum
-- Ripple
-- Solana
-""")
-    
 col3, col4 = st.columns(2)
 
 with col3:
 
-    st.warning("""
-### 🛡 Stablecoins
-
-Explora:
-
-- Peg
-- Market Cap
-- Supply
-- Volatilidad
-""")
+    st.markdown(
+        icon_box(
+            "shield",
+            "**Stablecoins**\n\n"
+            "Explora:\n\n"
+            "- Peg\n"
+            "- Market Cap\n"
+            "- Supply\n"
+            "- Volatilidad",
+            kind="warning",
+        ),
+        unsafe_allow_html=True,
+    )
 
 with col4:
 
-    st.error("""
-### 🚨 Alertas
+    st.markdown(
+        icon_box(
+            "alert",
+            "**Alertas**\n\n"
+            "Detecta automáticamente:\n\n"
+            "- Pérdida del peg\n"
+            "- Alta volatilidad\n"
+            "- Cambios importantes",
+            kind="error",
+        ),
+        unsafe_allow_html=True,
+    )
 
-Detecta automáticamente:
-
-- Pérdida del peg
-- Alta volatilidad
-- Cambios importantes
-""")
-    
 st.divider()
 
-st.subheader("🛠 Tecnologías utilizadas")
+st.markdown(icon_heading("tool", "Tecnologías utilizadas", level=3), unsafe_allow_html=True)
 
-col1,col2,col3 = st.columns(3)
+col1, col2, col3 = st.columns(3)
 
 with col1:
     st.markdown("""
@@ -99,10 +113,10 @@ with col3:
 - Visual Studio Code
 - GitHub
 """)
-    
+
 st.divider()
 
-st.subheader("📚 Sobre el proyecto")
+st.markdown(icon_heading("book", "Sobre el proyecto", level=3), unsafe_allow_html=True)
 
 st.write("""
 CriptoRadar fue desarrollado como proyecto de análisis de datos con el objetivo

@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - master
-      - feat/docker #Eliminar si cambiamos a main
+      - fix/isotype #Eliminar si cambiamos a main
 
 jobs:
   docker:
