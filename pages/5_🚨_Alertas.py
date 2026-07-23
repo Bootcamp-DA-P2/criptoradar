@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from pathlib import Path
 import os
 
-from src.view.icons import icon_heading, icon_md, icon_box, metric_html, icon
+from src.view.icons import icon_heading, icon_md, icon_box, metric_html
 
 # ==================================
 # CONFIGURACIÓN
@@ -67,7 +67,7 @@ engine = create_engine(
 # Función para cargar los datos con caché para optimizar el rendimiento
 @st.cache_data(ttl=300)  # Expira la caché cada 5 minutos
 def cargar_datos_desde_db():
-    # Hacemos un JOIN para juntar la alerta con el nombre de la stablecoin
+    # Hacemos un JOIN para juntar la alerta con el nombre de la stablecoin 
     # y traer el precio e histórico de desviación correspondiente a esa fecha
     query = """
         SELECT 
@@ -83,11 +83,13 @@ def cargar_datos_desde_db():
         LEFT JOIN preprocesados_historico p 
             ON a.stablecoin_id = p.stablecoin_id AND a.datetime = p.datetime;
     """
-    df_db = engine.query(query)
-
+    with engine.connect() as connection:
+        df_db = pd.read_sql(query, connection)
+    
     # Forzar minúsculas en las columnas para asegurar coincidencia con el resto del script
     df_db.columns = df_db.columns.str.lower()
     return df_db
+
 
 @st.cache_data(ttl=300)
 def cargar_criticas_desde_db():
