@@ -3,6 +3,7 @@ import plotly.express as px
 
 from src.view.componentes import cabecera
 from src.view.cargar_streamlit import cargar_crypto, cargar_stable
+from src.view.icons import icon_heading, icon_md, icon_box, metric_html
 
 # =====================================================
 # CARGAR DATOS
@@ -19,12 +20,13 @@ df_crypto = df_crypto.sort_values("datetime")
 
 cabecera(df_crypto, df_stable)
 
-st.title("📊 Dashboard Ejecutivo")
+st.markdown(icon_heading("bar-chart", "Dashboard Ejecutivo", level=1), unsafe_allow_html=True)
 
 ultima_actualizacion = df_crypto["datetime"].max()
 
-st.caption(
-    f"🕒 Datos actualizados hasta: {ultima_actualizacion.strftime('%d/%m/%Y')}"
+st.markdown(
+    icon_md("clock", f"Datos actualizados hasta: {ultima_actualizacion.strftime('%d/%m/%Y')}", size=14),
+    unsafe_allow_html=True,
 )
 
 st.write(
@@ -35,7 +37,7 @@ st.write(
 # FILTROS
 # =====================================================
 
-st.sidebar.header("⚙️ Filtros")
+st.sidebar.markdown(icon_heading("settings", "Filtros", level=3), unsafe_allow_html=True)
 
 crypto = st.sidebar.selectbox(
     "Criptomoneda",
@@ -43,12 +45,12 @@ crypto = st.sidebar.selectbox(
 )
 
 fecha_inicio = st.sidebar.date_input(
-    "📅 Fecha inicial",
+    "Fecha inicial",
     value=df_crypto["datetime"].min().date()
 )
 
 fecha_fin = st.sidebar.date_input(
-    "📅 Fecha final",
+    "Fecha final",
     value=df_crypto["datetime"].max().date()
 )
 
@@ -84,37 +86,32 @@ variacion = (
 # KPIs
 # =====================================================
 
-st.subheader(f"🪙 Resumen de {crypto.capitalize()}")
+st.markdown(icon_heading("coin", f"Resumen de {crypto.capitalize()}", level=3), unsafe_allow_html=True)
 
 c1, c2, c3, c4 = st.columns(4)
 
 with c1:
-
-    st.metric(
-        "💰 Precio actual",
-        f"${precio_actual:,.2f}",
-        delta=f"{variacion:.2f}%"
+    st.markdown(
+        metric_html("banknote", "Precio actual", f"${precio_actual:,.2f}", delta=f"{variacion:.2f}%"),
+        unsafe_allow_html=True,
     )
 
 with c2:
-
-    st.metric(
-        "📈 Máximo",
-        f"${datos['high'].max():,.2f}"
+    st.markdown(
+        metric_html("trending-up", "Máximo", f"${datos['high'].max():,.2f}"),
+        unsafe_allow_html=True,
     )
 
 with c3:
-
-    st.metric(
-        "📉 Mínimo",
-        f"${datos['low'].min():,.2f}"
+    st.markdown(
+        metric_html("trending-down", "Mínimo", f"${datos['low'].min():,.2f}"),
+        unsafe_allow_html=True,
     )
 
 with c4:
-
-    st.metric(
-        "📊 Volumen total",
-        f"{datos['volume'].sum():,.0f}"
+    st.markdown(
+        metric_html("bar-chart", "Volumen total", f"{datos['volume'].sum():,.0f}"),
+        unsafe_allow_html=True,
     )
 
 st.divider()
@@ -127,7 +124,7 @@ fig = px.line(
     datos,
     x="datetime",
     y=["close", "media_movil_30"],
-    title=f"📈 Evolución del precio de {crypto.capitalize()}",
+    title=f"Evolución del precio de {crypto.capitalize()}",
     labels={
         "value": "Precio USD",
         "datetime": "Fecha"
@@ -160,14 +157,24 @@ st.plotly_chart(
 
 if variacion >= 0:
 
-    st.success(
-        f"📈 {crypto.capitalize()} registró una variación positiva de {variacion:.2f}% respecto al día anterior."
+    st.markdown(
+        icon_box(
+            "trending-up",
+            f"{crypto.capitalize()} registró una variación positiva de {variacion:.2f}% respecto al día anterior.",
+            kind="success",
+        ),
+        unsafe_allow_html=True,
     )
 
 else:
 
-    st.error(
-        f"📉 {crypto.capitalize()} registró una variación negativa de {variacion:.2f}% respecto al día anterior."
+    st.markdown(
+        icon_box(
+            "trending-down",
+            f"{crypto.capitalize()} registró una variación negativa de {variacion:.2f}% respecto al día anterior.",
+            kind="error",
+        ),
+        unsafe_allow_html=True,
     )
 
 st.divider()
@@ -180,7 +187,7 @@ fig2 = px.area(
     datos,
     x="datetime",
     y="volume",
-    title=f"💵 Volumen negociado de {crypto.capitalize()}"
+    title=f"Volumen negociado de {crypto.capitalize()}"
 )
 
 fig2.update_layout(
@@ -205,13 +212,15 @@ st.plotly_chart(
     use_container_width=True
 )
 
-st.info(
-    """
-**Interpretación**
-
-Los incrementos de volumen suelen coincidir con periodos
-de mayor actividad del mercado y aumentos de volatilidad.
-"""
+st.markdown(
+    icon_box(
+        "search",
+        "**Interpretación**\n\n"
+        "Los incrementos de volumen suelen coincidir con periodos "
+        "de mayor actividad del mercado y aumentos de volatilidad.",
+        kind="info",
+    ),
+    unsafe_allow_html=True,
 )
 
 st.divider()
@@ -220,7 +229,7 @@ st.divider()
 # TABLA
 # =====================================================
 
-st.subheader("📋 Últimos registros")
+st.markdown(icon_heading("document", "Últimos registros", level=3), unsafe_allow_html=True)
 
 st.dataframe(
 
@@ -249,7 +258,7 @@ csv = datos.to_csv(index=False).encode("utf-8")
 
 st.download_button(
 
-    "📥 Descargar datos en CSV",
+    "Descargar datos en CSV",
 
     csv,
 
@@ -268,7 +277,7 @@ st.download_button(
 
 st.divider()
 
-st.subheader("🧬 Comparativa por tipo de respaldo")
+st.markdown(icon_heading("link", "Comparativa por tipo de respaldo", level=3), unsafe_allow_html=True)
 
 st.markdown("""
 Comparamos `peg_deviation` y volatilidad agrupando por **tipo de respaldo**
@@ -346,7 +355,12 @@ with col2:
         use_container_width=True
     )
 
-st.info("""
-Orden de izquierda a derecha: mecanismo de respaldo más estable → menos estable,
-según la mediana de `peg_deviation`.
-""")
+st.markdown(
+    icon_box(
+        "target",
+        "Orden de izquierda a derecha: mecanismo de respaldo más estable → menos estable, "
+        "según la mediana de `peg_deviation`.",
+        kind="info",
+    ),
+    unsafe_allow_html=True,
+)
