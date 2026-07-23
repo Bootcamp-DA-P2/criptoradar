@@ -2,7 +2,7 @@ import streamlit as st
 from PIL import Image
 
 from src.view.cargar_streamlit import cargar_crypto, cargar_stable
-from src.view.icons import icon_heading, icon_box, metric_html
+from src.view.icons import icon_heading, icon_box, metric_html,icon
 
 # =====================================
 # CONFIGURACIÓN
