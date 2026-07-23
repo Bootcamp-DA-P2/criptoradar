@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-      - master
-      - fix/isotype #Eliminar si cambiamos a main
 
 jobs:
   docker:
