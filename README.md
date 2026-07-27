@@ -75,6 +75,7 @@ Datos abiertos y de acceso gratuito:
 - **[DefiLlama API](https://api-docs.defillama.com/)** (sin clave) — supply circulante de stablecoins, desviación del peg y TVL. Fuente central para la vigilancia de stablecoins.
 - **[GeckoTerminal API](https://apiguide.geckoterminal.com/)** / Binance API pública — OHLCV de exchange y on-chain en tiempo casi real.
 - **[Google BigQuery — Public Datasets](https://cloud.google.com/bigquery/public-data)** *(opcional / avanzado)* — datasets on-chain de Bitcoin y Ethereum (transacciones, gas, wallets). Requiere cuenta gratuita de Google Cloud.
+- **[Yahoofinance](https://cloud.google.com/bigquery/public-data)** - Datasets on-chain de Bitcoin y Ethereum
 
 ---
 
@@ -86,8 +87,8 @@ Datos abiertos y de acceso gratuito:
 - **Machine Learning** — Isolation Forest (detección de anomalías / depegs)
 - **Modelado complementario** — regresión OLS y XGBoost Regressor
 - **Pipeline** — ingesta programada por API
-- **Excel** — KPIs e informes
 - **Streamlit** — panel de mercado y monitor de stablecoins (desplegado en Railway)
+- **Yahoofinance** - Datasets on-chain de Bitcoin y Ethereum
 
 ---
 
@@ -196,6 +197,5 @@ Análisis econométrico y de machine learning aplicado específicamente al riesg
 - [GeckoTerminal API](https://apiguide.geckoterminal.com/)
 - [pycoingecko (PyPI)](https://pypi.org/project/pycoingecko/)
 - [scikit-learn — Detección de anomalías](https://scikit-learn.org/stable/modules/outlier_detection.html)
-- [BigQuery Public Datasets](https://cloud.google.com/bigquery/public-data)
 - [Streamlit — Documentación](https://docs.streamlit.io/)
 
